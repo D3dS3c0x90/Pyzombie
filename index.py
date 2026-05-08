@@ -123,6 +123,7 @@ while running:
     # 2. Draw Player
     pygame.draw.rect(screen, (139, 69, 19), (screen_player_x, screen_player_y, player.width, player.height))
     draw_blit(player.move0[player.direction][int(player.current_frame)], (screen_player_x - player.width * 4, screen_player_y - player.height * 3))
+    print(f"Player at {player.x}x, {player.y}y")
 
     # 3. Draw Zombies
     for zombie in zombies:
