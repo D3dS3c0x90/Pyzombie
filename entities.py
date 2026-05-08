@@ -1,5 +1,32 @@
 import pygame
-import entities
+
+class PyzombieImageComponent:
+    def __init__(self, path, screen):
+        self.path = path
+        self.screen = screen
+    
+    def _draw_(self, 
+           x, y, width, height, 
+           player_x, player_y, 
+           world_x, world_y, 
+           scale=False, new_width=0, new_height=0):
+    
+        # Convert world to screen position
+        screen_x = world_x - player_x
+        screen_y = world_y - player_y
+        
+        # Cut from sprite sheet
+        tile_object = pygame.image.load(self.path).subsurface((x, y, width, height))
+        
+        if scale:
+            # Scale to new size
+            scaled_tile = pygame.transform.scale(tile_object, (new_width, new_height))
+            # Draw at screen position
+            self.screen.blit(scaled_tile, (screen_x, screen_y))
+        else:
+            # Scale to original size (or just use original)
+            scaled_tile = pygame.transform.scale(tile_object, (width, height))
+            self.screen.blit(scaled_tile, (screen_x, screen_y))
 
 all_trees_png_1 = pygame.image.load("./assets/Trees1.png")
 all_trees_png_2 = pygame.image.load("./assets/Trees2.png")
@@ -30,37 +57,37 @@ total_rows = 8
 PLAYER_SIZE = 200
 # 1792 x 1024 (14 frames, 8 directions) 
 move1_animations = {
-    "right": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 0, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "down_right": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 128, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "down": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 256, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "down_left": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 384, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "left": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 512, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "up_left": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 640, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "up": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 768, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
-    "up_right": [pygame.transform.scale(entities.player_move_png.subsurface((i * 128, 896, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "right": [pygame.transform.scale(player_move_png.subsurface((i * 128, 0, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "down_right": [pygame.transform.scale(player_move_png.subsurface((i * 128, 128, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "down": [pygame.transform.scale(player_move_png.subsurface((i * 128, 256, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "down_left": [pygame.transform.scale(player_move_png.subsurface((i * 128, 384, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "left": [pygame.transform.scale(player_move_png.subsurface((i * 128, 512, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "up_left": [pygame.transform.scale(player_move_png.subsurface((i * 128, 640, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "up": [pygame.transform.scale(player_move_png.subsurface((i * 128, 768, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
+    "up_right": [pygame.transform.scale(player_move_png.subsurface((i * 128, 896, 128, 128)), (PLAYER_SIZE, PLAYER_SIZE)) for i in range(14)],
 }
 
 zombie_move1_animations = {
-    "down_left": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 0, 125, 120)) for i in range(8)],
-    "left": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 125, 110, 125)) for i in range(8)],
-    "up_left": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 250, 125, 120)) for i in range(8)],
-    "up": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 375, 125, 120)) for i in range(8)],
-    "up_right": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 500 , 125, 120)) for i in range(8)],
-    "right": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 625, 125, 120)) for i in range(8)],
-    "down_right": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 750, 125, 120)) for i in range(8)],
-    "down": [entities.zombie_move1_png.subsurface(((i + 4) * 125, 875, 125, 120)) for i in range(8)],
+    "down_left": [ zombie_move1_png.subsurface(((i + 4) * 125, 0, 125, 120)) for i in range(8)],
+    "left": [ zombie_move1_png.subsurface(((i + 4) * 125, 125, 110, 125)) for i in range(8)],
+    "up_left": [ zombie_move1_png.subsurface(((i + 4) * 125, 250, 125, 120)) for i in range(8)],
+    "up": [ zombie_move1_png.subsurface(((i + 4) * 125, 375, 125, 120)) for i in range(8)],
+    "up_right": [ zombie_move1_png.subsurface(((i + 4) * 125, 500 , 125, 120)) for i in range(8)],
+    "right": [ zombie_move1_png.subsurface(((i + 4) * 125, 625, 125, 120)) for i in range(8)],
+    "down_right": [ zombie_move1_png.subsurface(((i + 4) * 125, 750, 125, 120)) for i in range(8)],
+    "down": [ zombie_move1_png.subsurface(((i + 4) * 125, 875, 125, 120)) for i in range(8)],
 }
 
 # 1792 x 1024 (14 frames, 8 directions) 
 attack1_animations = {
-    "down": [entities.player_attack_png.subsurface((i * 128, 0, 128, 128)) for i in range(14)],
-    "down_right": [entities.player_attack_png.subsurface((i * 128, 128, 128, 128)) for i in range(14)],
-    "right": [entities.player_attack_png.subsurface((i * 128, 256, 128, 128)) for i in range(14)],
-    "up_right": [entities.player_attack_png.subsurface((i * 128, 384, 128, 128)) for i in range(14)],
-    "up": [entities.player_attack_png.subsurface((i * 128, 512, 128, 128)) for i in range(14)],
-    "up_left": [entities.player_attack_png.subsurface((i * 128, 640, 128, 128)) for i in range(14)],
-    "left": [entities.player_attack_png.subsurface((i * 128, 768, 128, 128)) for i in range(14)],
-    "down_left": [entities.player_attack_png.subsurface((i * 128, 896, 128, 128)) for i in range(14)],
+    "down": [ player_attack_png.subsurface((i * 128, 0, 128, 128)) for i in range(14)],
+    "down_right": [ player_attack_png.subsurface((i * 128, 128, 128, 128)) for i in range(14)],
+    "right": [ player_attack_png.subsurface((i * 128, 256, 128, 128)) for i in range(14)],
+    "up_right": [ player_attack_png.subsurface((i * 128, 384, 128, 128)) for i in range(14)],
+    "up": [ player_attack_png.subsurface((i * 128, 512, 128, 128)) for i in range(14)],
+    "up_left": [ player_attack_png.subsurface((i * 128, 640, 128, 128)) for i in range(14)],
+    "left": [ player_attack_png.subsurface((i * 128, 768, 128, 128)) for i in range(14)],
+    "down_left": [ player_attack_png.subsurface((i * 128, 896, 128, 128)) for i in range(14)],
 }
 # Get total size
 player_move_total_width = player_move_png.get_width()

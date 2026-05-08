@@ -1,6 +1,12 @@
 import pygame
 import random
-import entities, characters, mousefeatures
+import entities, characters, mousefeatures, map
+
+SCREEN_WIDTH = 1440
+SCREEN_HEIGHT = 830
+WORLD_WIDTH = 2000
+WORLD_HEIGHT = 2000
+PLAYER_START_POINT = 1000
 
 def entity_moving(entity, speed, frames):
     if entity.moving:
@@ -26,7 +32,7 @@ def draw_blit(animation, info):
 
 pygame.init()
 
-player = characters.Player(100, 100, 
+player = characters.Player(PLAYER_START_POINT, PLAYER_START_POINT, 
     animations = [
         entities.move1_animations, 
         entities.move1_animations,
@@ -37,13 +43,6 @@ player = characters.Player(100, 100,
 zombies = [
     characters.Zombie(random.randint(0, 2000), random.randint(0, 2000), animations = entities.zombie_move1_animations) for _ in range(5)
 ]
-
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 600
-# SCREEN_WIDTH = 1440
-# SCREEN_HEIGHT = 830
-WORLD_WIDTH = 2000
-WORLD_HEIGHT = 2000
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Last Green - Huge Forest World")
@@ -69,12 +68,9 @@ while running:
                 bx, by, bdir_x, bdir_y = mouse_features.get_mouse_direction()
                 bullet = characters.Bullet(bx, by, bdir_x, bdir_y, speed=12, max_distance=400)
                 bullets.append(bullet)
-            
-
 
     keys = pygame.key.get_pressed()
     mouse_screen_x, mouse_screen_y = pygame.mouse.get_pos()
-
     
     player.move(keys)
 
@@ -106,7 +102,17 @@ while running:
     mouse_world_x, mouse_world_y = player.camera_x + mouse_screen_x, player.camera_y + mouse_screen_y
 
     # 1. Background (clears screen)
-    screen.fill((34, 68, 34))
+    # screen.fill((48, 158, 75))
+    screen.fill((0, 0, 0))
+
+    ### The main objects here
+    map_tile_1  = entities.PyzombieImageComponent("./assets/tileset.png", screen)
+
+    all_map_tiles = []
+    all_map_tiles.append(map_tile_1)
+
+    game_map = map.Map()
+    game_map.create_map(player, all_map_tiles)
 
     # Draw bullets
     for bullet in bullets:
@@ -115,15 +121,13 @@ while running:
         mouse_screen_x, mouse_screen_y = pygame.mouse.get_pos()
         player_screen_x = player.x - player.camera_x
         player_screen_y = player.y - player.camera_y
-        pygame.draw.line(screen, (255, 255, 255), 
-                 (player_screen_x + player.width//2, player_screen_y + player.height//2),
-                 (mouse_screen_x, mouse_screen_y), 2)
-        print(f"The bullet position now is: {bullet.x}x, {bullet.y}y")
+        # pygame.draw.line(screen, (255, 255, 255), 
+        #          (player_screen_x + player.width//2, player_screen_y + player.height//2),
+        #          (mouse_screen_x, mouse_screen_y), 2)
 
     # 2. Draw Player
     pygame.draw.rect(screen, (139, 69, 19), (screen_player_x, screen_player_y, player.width, player.height))
     draw_blit(player.move0[player.direction][int(player.current_frame)], (screen_player_x - player.width * 4, screen_player_y - player.height * 3))
-    print(f"Player at {player.x}x, {player.y}y")
 
     # 3. Draw Zombies
     for zombie in zombies:
