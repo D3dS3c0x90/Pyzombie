@@ -4,17 +4,6 @@ import random
 import src.central_managment as manage
 from src.settings import WORLD_WIDTH, WORLD_HEIGHT, ZOMBIE_ID, BULLET_ID
 
-def set_id():
-    global ZOMBIE_ID
-    ZOMBIE_ID += 1
-    manage.debugger("z_c", f"zombie_{ZOMBIE_ID}")
-    return f"zombie_{ZOMBIE_ID}"
-
-def set_bullet_id():
-    global BULLET_ID
-    BULLET_ID += 1
-    return f"bullet_{BULLET_ID}"
-
 class Entity(pygame.sprite.Sprite):
     """
     🧱 BASE GAME-OBJECT BLUEPRINT
@@ -116,22 +105,35 @@ class Player(Entity):
         else:
             self.current_frame = 0  # Idle default (rest frame)
 
-    def get_current_image(self):
+    def get_current_image(self, flag="move"):
         """Returns the specific graphical texture mapped for this animation loop interval."""
-        return self.animations[self.direction][int(self.current_frame)]
+        if flag == "move":
+            return self.animations[self.direction][int(self.current_frame)]
 
 
 class Zombie(Entity):
     """🧟 THE HORDE"""
-    def __init__(self, x, y, animation_dict):
+    def __init__(self, x, y, move_animation_dict, die_animation_dict):
         super().__init__(x, y, width=70, height=70)
-        self.animations = animation_dict
-        self.direction = "down"
+        self.move_animations = move_animation_dict
+        self.die_animations = die_animation_dict
+        self.move_direction = "down"
+        self.die_direction = "down"
+        self.is_dead = False
         self.speed = 2
-        self.current_frame = 0
-        self.animation_speed = 0.2
-        self.ID = set_id()
+        self.health = 100
+        self.move_current_frame = 0
+        self.die_current_frame = 0
+        self.move_animation_speed = 0.2
+        self.die_animation_speed = 0.15
+        self.ID = self.set_id()
         
+    def set_id(self):
+        global ZOMBIE_ID
+        ZOMBIE_ID += 1
+        manage.debugger("z_c", f"zombie_{ZOMBIE_ID}")
+        return f"zombie_{ZOMBIE_ID}"
+
     def update_rect(self):
         """
         📐 HITBOX FOOT COMPENSATOR
@@ -148,105 +150,101 @@ class Zombie(Entity):
         Uses trigonometry to chase the player smoothly and dynamically switch 
         between all 8 animation states (including diagonals).
         """
-        old_x, old_y = self.x, self.y
         
-        dx = player.x - self.x
-        dy = player.y - self.y
-        dist = math.hypot(dx, dy) # Calculates Hypotenuse: sqrt(dx^2 + dy^2)
-
-        if dist > 0:
-            # Calculate our step size for this specific frame
-            move_x = (dx / dist) * self.speed
-            move_y = (dy / dist) * self.speed
-
-            # ------------------------------------------------------------------
-            # ➡️ AXIS 1: HORIZONTAL RESOLUTION
-            # ------------------------------------------------------------------
-            old_x = self.x     # Set checkpoint for X
-            self.x += move_x
-            self.update_rect() # Push hitbox out to test the waters
+        if self.is_dead == False:
+            old_x, old_y = self.x, self.y
             
-            for item in items:
-                if item.ID != self.ID and self.rect.colliderect(item.rect):
-                    manage.debugger("z_z", int(self.x), int(self.y))
-                    self.x = old_x      # Collision! Snap back to checkpoint
-                    self.update_rect()  # Sync hitbox back immediately
-                    break               # Stop checking other items this frame
+            dx = player.x - self.x
+            dy = player.y - self.y
+            dist = math.hypot(dx, dy) # Calculates Hypotenuse: sqrt(dx^2 + dy^2)
+
+            if dist > 0:
+                # Calculate our step size for this specific frame
+                move_x = (dx / dist) * self.speed
+                move_y = (dy / dist) * self.speed
+
+                # ------------------------------------------------------------------
+                # ➡️ AXIS 1: HORIZONTAL RESOLUTION
+                # ------------------------------------------------------------------
+                old_x = self.x     # Set checkpoint for X
+                self.x += move_x
+                self.update_rect() # Push hitbox out to test the waters
                 
-            for tree in trees:
-                if self.rect.colliderect(tree.rect):
-                    manage.debugger("z_t", int(self.x), int(self.y))
-                    self.x = old_x      # Collision! Snap back to checkpoint
-                    self.update_rect()  # Sync hitbox back immediately
-                    break               # Stop checking other items this frame
+                for item in items:
+                    if item.ID != self.ID and self.rect.colliderect(item.rect) and (item.is_dead == False and self.is_dead == False):
+                        manage.debugger("z_z", int(self.x), int(self.y))
+                        self.x = old_x      # Collision! Snap back to checkpoint
+                        self.update_rect()  # Sync hitbox back immediately
+                        break               # Stop checking other items this frame
                     
+                for tree in trees:
+                    if self.rect.colliderect(tree.rect):
+                        manage.debugger("z_t", int(self.x), int(self.y))
+                        self.x = old_x      # Collision! Snap back to checkpoint
+                        self.update_rect()  # Sync hitbox back immediately
+                        break               # Stop checking other items this frame
+                        
 
-            # ------------------------------------------------------------------
-            # ⬇️ AXIS 2: VERTICAL RESOLUTION
-            # ------------------------------------------------------------------
-            old_y = self.y     # Set checkpoint for Y
-            self.y += move_y
-            self.update_rect() # Push hitbox out to test the waters
-            
-            for item in items:
-                if item.ID != self.ID and self.rect.colliderect(item.rect):
-                    manage.debugger("z_z", int(self.x), int(self.y))
-                    self.y = old_y      # Collision! Snap back to checkpoint
-                    self.update_rect()  # Sync hitbox back immediately
-                    break               # Stop checking other items this frame
+                # ------------------------------------------------------------------
+                # ⬇️ AXIS 2: VERTICAL RESOLUTION
+                # ------------------------------------------------------------------
+                old_y = self.y     # Set checkpoint for Y
+                self.y += move_y
+                self.update_rect() # Push hitbox out to test the waters
                 
-            for tree in trees:
-                if self.rect.colliderect(tree.rect):
-                    manage.debugger("z_t", int(self.x), int(self.y))
-                    self.y = old_y      # Collision! Snap back to checkpoint
-                    self.update_rect()  # Sync hitbox back immediately
-                    break               # Stop checking other items this frame
+                for item in items:
+                    if item.ID != self.ID and self.rect.colliderect(item.rect) and (item.is_dead == False and self.is_dead == False):
+                        manage.debugger("z_z", int(self.x), int(self.y))
+                        self.y = old_y      # Collision! Snap back to checkpoint
+                        self.update_rect()  # Sync hitbox back immediately
+                        break               # Stop checking other items this frame
+                    
+                for tree in trees:
+                    if self.rect.colliderect(tree.rect):
+                        manage.debugger("z_t", int(self.x), int(self.y))
+                        self.y = old_y      # Collision! Snap back to checkpoint
+                        self.update_rect()  # Sync hitbox back immediately
+                        break               # Stop checking other items this frame
 
-            # 2. Angular Animation Logic: Get the angle in radians (-pi to pi)
-            # We invert dy because Pygame's Y axis goes down instead of up
-            angle = math.atan2(-dy, dx)
-            # Convert radians to degrees (0 to 360)
-            degrees = math.degrees(angle)
-            if degrees < 0:
-                degrees += 360
+                # 2. Angular Animation Logic: Get the angle in radians (-pi to pi)
+                self.move_direction = manage.get_angle(dx, dy)
+                self.die_direction = self.move_direction
 
-            # 3. Compass Mapping: Map the 360° circle into 8 directional slices of 45° each
-            if 22.5 <= degrees < 67.5:
-                self.direction = "up_right"
-            elif 67.5 <= degrees < 112.5:
-                self.direction = "up"
-            elif 112.5 <= degrees < 157.5:
-                self.direction = "up_left"
-            elif 157.5 <= degrees < 202.5:
-                self.direction = "left"
-            elif 202.5 <= degrees < 247.5:
-                self.direction = "down_left"
-            elif 247.5 <= degrees < 292.5:
-                self.direction = "down"
-            elif 292.5 <= degrees < 337.5:
-                self.direction = "down_right"
-            else:
-                self.direction = "right"  # Covers 337.5 to 360 and 0 to 22.5
+            # 4. Animation Frame Tick
 
-        # 4. Animation Frame Tick
-        self.current_frame += self.animation_speed
-        if self.current_frame >= len(self.animations[self.direction]):
-            self.current_frame = 0
+            self.move_current_frame += self.move_animation_speed
+            if self.move_current_frame >= len(self.move_animations[self.move_direction]):
+                self.move_current_frame = 0
+        else:
+            self.die_current_frame += self.die_animation_speed
+            # self.die_direction = self.move_direction
+            if self.die_current_frame >= len(self.die_animations[self.move_direction]):
+                self.die_current_frame = len(self.die_animations[self.move_direction]) - 1
+                self.die_animation_speed = 0
+        
 
-    def get_current_image(self):
-        return self.animations[self.direction][int(self.current_frame)]
+    def get_current_image(self, flag="move"):
+        if flag == "move":
+            return self.move_animations[self.move_direction][int(self.move_current_frame)]
+        elif flag == "die":
+            return self.die_animations[self.die_direction][int(self.die_current_frame)]
 
 class Bullet(Entity):
     """💥 BALLISTIC PROJECTILE LOGIC"""
-    def __init__(self, x, y, dir_x, dir_y, speed=18, max_dist=800):
+    def __init__(self, x, y, dir_x, dir_y, speed=50, max_dist=800):
         super().__init__(x, y, width=6, height=6)
         self.dir_x = dir_x  # Pre-calculated normalized direction trajectory x
         self.dir_y = dir_y  # Pre-calculated normalized direction trajectory y
         self.speed = speed
         self.max_dist = max_dist
         self.damage = random.randint(120, 180)
-        self.ID = set_bullet_id()
+        self.ID = self.set_bullet_id()
         self.traveled = 0
+        
+    def set_bullet_id(self):
+        global BULLET_ID
+        BULLET_ID += 1
+        return f"bullet_{BULLET_ID}"
 
     def update(self):
         """Advances muzzle distance. Returns True when projectile range expires."""
@@ -254,9 +252,9 @@ class Bullet(Entity):
         self.y += self.dir_y * self.speed
         self.update_rect()
         manage.debugger("m_p", int(self.x), int(self.y))
+        manage.debugger("b_d", manage.get_angle(self.dir_x, self.dir_y))
         self.traveled += self.speed
         return self.traveled >= self.max_dist
-
 
 class Tree(Entity):
     """🌲 MAP OBSTACLE / STATIC SCRAPERS"""

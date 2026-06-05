@@ -11,14 +11,17 @@ import src.central_managment as manage
 from src.entities import Player, Zombie, Bullet ,Tree
 
 def create_zombie(game):
+    global ALL_ZOMBIES
     while True:
         time.sleep(5.0)
         zombie = Zombie(
             random.randint(200, 4000), 
             random.randint(200, 4000), 
-            assets.animations["zombie_move"])
+            assets.animations["zombie_move"],
+            assets.animations["zombie_die"])
         
         game.zombies.append(zombie)
+        ALL_ZOMBIES[zombie.ID] = zombie
 
 class GameEngine:
     """
@@ -27,11 +30,13 @@ class GameEngine:
     coordinates data flow, and drives rendering blits to the graphics display.
     """
     def __init__(self):
-        os.environ['SDL_VIDEO_WINDOW_POS'] = "0, 75"
+        global ALL_ZOMBIES
+        os.environ['SDL_VIDEO_WINDOW_POS'] = "0, 25"
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Last Green - Refactored Engine v2.0")
         self.clock = pygame.time.Clock()
+        self.zombie_spawn_timer = 0.0  # Tracks elapsed milliseconds
         
         # Pull graphics structures out into core memory addresses
         assets.load_all_assets()
@@ -44,8 +49,12 @@ class GameEngine:
             Zombie(
                 random.randint(200, 4500), 
                 random.randint(200, 4500), 
-                assets.animations["zombie_move"])
+                assets.animations["zombie_move"],
+                assets.animations["zombie_die"])
             for _ in range(5)]
+        
+        for zombie in self.zombies:
+            ALL_ZOMBIES[zombie.ID] = zombie
         
         self.trees      = [
             Tree(
@@ -60,9 +69,14 @@ class GameEngine:
         self.running = True
 
     def run(self):
+        global FRAME_NOW
         """The primary execution architecture loop."""
         while self.running:
-            self.handle_events()       # Listen for inputs/triggers
+            FRAME_NOW += 1
+            if FRAME_NOW > 60:
+                FRAME_NOW = 0
+
+            self.handle_events()       
             self.update_game_states()  # Calculate real-time vector alterations
             self.render_draw_calls()   # Flush image surfaces out to screen hardware
             self.clock.tick(FPS)       # Maintain rigid framerate pacing
@@ -105,6 +119,9 @@ class GameEngine:
         # Route pathfinding instructions for the horde tracking loops
         for zombie in self.zombies:
             zombie.update_ai(self.player, self.zombies, self.trees)
+                # if zombie.is_dead:
+                #     zombie.update_ai()
+                # else:
             
         # Iterate over tracer bullets array backward or as slice copies to prevent item deletion index skips!
         for bullet in self.bullets[:]:
@@ -113,7 +130,14 @@ class GameEngine:
             # Bullet - Zombie Damage
             decision = manage.bullet_zombie_collision(bullet, self.zombies)
             if decision["bullet_die"]:
-                manage.debugger("b_z", bullet.ID, zombie.ID, decision["bullet_damage"])
+                manage.debugger("b_z", bullet.ID, decision["zombie"].ID, decision["bullet_damage"])
+                decision["zombie"].is_dead = True
+                bullet.traveled = 800
+                self.bullets.remove(bullet)
+                
+            # Bullet - Trees Collision
+            decision = manage.bullet_tree_collision(bullet, self.trees)
+            if decision["bullet_die"]:
                 bullet.traveled = 800
                 self.bullets.remove(bullet)
 
@@ -136,15 +160,19 @@ class GameEngine:
 
         # 2. DRAW OPPOSITION ENEMY GROUPS
         for zombie in self.zombies:
-            z_img = zombie.get_current_image()
-            self.screen.blit(z_img, (zombie.x - self.camera_x, zombie.y - self.camera_y))
+            if zombie.is_dead:
+                zombie_die_img = zombie.get_current_image(flag="die")
+                self.screen.blit(zombie_die_img, (zombie.x - self.camera_x + zombie.width // 2, zombie.y - self.camera_y + zombie.height // 2))
+            else:
+                zombie_move_img = zombie.get_current_image()
+                self.screen.blit(zombie_move_img, (zombie.x - self.camera_x, zombie.y - self.camera_y))
         
         # 3. DRAW SURVIVOR UNIT HERO
         # Calculates centering margins to draw huge character visuals cleanly centered over tiny collision boxes.
-        p_img = self.player.get_current_image()
-        p_draw_x = (self.player.x - self.camera_x) - (p_img.get_width() - self.player.width) // 2
-        p_draw_y = (self.player.y - self.camera_y) - (p_img.get_height() - self.player.height) // 2
-        self.screen.blit(p_img, (p_draw_x, p_draw_y))
+        player_move_img = self.player.get_current_image()
+        p_draw_x = (self.player.x - self.camera_x) - (player_move_img.get_width() - self.player.width) // 2
+        p_draw_y = (self.player.y - self.camera_y) - (player_move_img.get_height() - self.player.height) // 2
+        self.screen.blit(player_move_img, (p_draw_x, p_draw_y))
         
         # Draw Tree Last One        
         for tree in self.trees:

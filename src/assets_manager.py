@@ -21,6 +21,7 @@ def load_all_assets():
     player_move_png = image_load("assets/CrouchRun.png")
     player_attack_png = image_load("assets/Attack1.png")
     zombie_move_png = image_load("assets/zombie.png")
+    zombie_die_png = image_load("assets/Die.png")
     trees_png = image_load("assets/Trees1.png")
 
     # ✂️ SURVIVOR MOVEMENT SPRITE-SHEET SLICING
@@ -40,6 +41,25 @@ def load_all_assets():
         "right": all_frames[0], "down_right": all_frames[1], "down": all_frames[2],
         "down_left": all_frames[3], "left": all_frames[4], "up_left": all_frames[5],
         "up": all_frames[6], "up_right": all_frames[7]
+    }
+    
+    # 🧟 ZOMBIE DIE SPRITE-SHEET SLICING
+    # The sheet is built out of 8 rows (directions) and 8 columns (frames per action).
+    all_frames = {}
+    for row in range(8):
+        row_frames = []
+        for col in range(8):
+            # .subsurface isolates a clean bounding box inside the sprite sheet atlas
+            frame = zombie_die_png.subsurface((col * 64, row * 64, 64, 64))
+            # Scale up the frame so our survivor doesn't look like an ant on high-res monitors
+            row_frames.append(pygame.transform.scale(frame, (70, 70)))
+        all_frames[row] = row_frames
+
+    # Map raw rows to semantic movement directions
+    animations["zombie_die"] = {
+        "right": all_frames[5], "down_right": all_frames[6], "down": all_frames[7],
+        "down_left": all_frames[0], "left": all_frames[1], "up_left": all_frames[2],
+        "up": all_frames[3], "up_right": all_frames[4]
     }
 
     # 🧟 UNDEAD MOVEMENT SPRITE-SHEET SLICING
