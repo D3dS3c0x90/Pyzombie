@@ -1,3 +1,4 @@
+import pygame
 # ==============================================================================
 # 🎮 LAST GREEN - GLOBAL CONFIGURATION MATRIX
 # ==============================================================================
@@ -9,6 +10,8 @@
 # SCREEN_HEIGHT = 830
 SCREEN_WIDTH = 760
 SCREEN_HEIGHT = 830
+
+MUSIC_ENDED_EVENT = pygame.USEREVENT + 1
 
 # 🗺️ The Infinite Dread (World Map Boundary Constraints)
 # The player can explore deep into this 5000x5000 pixel vector space.
@@ -27,9 +30,9 @@ YELLOW = (255, 255, 0)    # Tracer bullet color
 
 ZOMBIE_ID, BULLET_ID = 0, 0
 
-ALL_ZOMBIES = {}
-
 DEBUGGER = {
+    "p_ammo":[None, None, None, None, None],
+    "p_move":"IDLE",
     "p_position_x":PLAYER_START_POINT,
     "p_position_y":PLAYER_START_POINT,
     "mouse_position_x":PLAYER_START_POINT,
@@ -40,4 +43,5 @@ DEBUGGER = {
     "zombie_zombie_collision":[None, None],
     "bullet_zombie_collision":[None, None, None],
     "zombie_create":"",
+    "zombie_removed":"",
 }
