@@ -4,66 +4,80 @@ import random
 
 
 def debugger(message_type="", *args):
-    global DEBUGGER, FRAME_NOW
+    pass
+# def debugger(message_type="", *args):
+#     global DEBUGGER, FRAME_NOW
 
-    p_p, m_p, z_t, z_z, z_c, b_z, b_d, p_m, p_a, z_r = False, False, False, False, False, False, False, False, False, False
-    if message_type == "p_p":
-        DEBUGGER["p_position_x"] = args[0]
-        DEBUGGER["p_position_y"] = args[1]
-        p_p = True
-    if message_type == "p_m":
-        DEBUGGER["p_move"] = args[0]
-        p_m = True
-    if message_type == "p_a":
-        DEBUGGER["p_ammo"] = [args[0], args[1], args[2], args[3], args[4]]
-        p_a = True
-    elif message_type == "m_p":
-        DEBUGGER["mouse_position_x"] = args[0]
-        DEBUGGER["mouse_position_y"] = args[1]
-        m_p = True
-    elif message_type == "z_t":
-        DEBUGGER["zombie_tree_collision"] = [args[0], args[1]]
-        z_t = True
-    elif message_type == "z_z":
-        DEBUGGER["zombie_zombie_collision"] = [args[0], args[1]]
-        z_z = True
-    elif message_type == "b_z":
-        DEBUGGER["bullet_zombie_collision"] = [args[0], args[1], args[2]]
-        b_z = True
-    elif message_type == "z_c":
-        DEBUGGER["zombie_create"] = args[0]
-        z_c = True
-    elif message_type == "b_d":
-        DEBUGGER["bullet_direction"] = args[0]
-        b_d = True
-    elif message_type == "z_r":
-        DEBUGGER["zombie_removed"] = args[0]
-        z_r = True
-    # \033[H resets the terminal cursor back to the top left corner (Line 1, Column 1)
-    # \033[2J return cursur to top left of the terminal
-    # This overwrites the old text in place instead of creating infinite scrolling lines!
-    # Define a standard width for the text column before the arrow starts [W] character
-    W = 80
+#     p_p, m_p, z_t, z_z, z_c, b_z, b_d, p_m, p_a, z_r, d_i, g_i, p_h = [False] * 13
+#     if message_type == "p_p":
+#         DEBUGGER["p_position_x"] = args[0]
+#         DEBUGGER["p_position_y"] = args[1]
+#         p_p = True
+#     if message_type == "p_m":
+#         DEBUGGER["p_move"] = args[0]
+#         p_m = True
+#     if message_type == "p_h":
+#         DEBUGGER["p_health"] = args[0]
+#         p_h = True
+#     if message_type == "p_a":
+#         DEBUGGER["p_ammo"] = [args[0], args[1], args[2], args[3], args[4]]
+#         p_a = True
+#     if message_type == "m_p":
+#         DEBUGGER["mouse_position_x"] = args[0]
+#         DEBUGGER["mouse_position_y"] = args[1]
+#         m_p = True
+#     if message_type == "z_t":
+#         DEBUGGER["zombie_tree_collision"] = [args[0], args[1]]
+#         z_t = True
+#     if message_type == "z_z":
+#         DEBUGGER["zombie_zombie_collision"] = [args[0], args[1]]
+#         z_z = True
+#     if message_type == "b_z":
+#         DEBUGGER["bullet_zombie_collision"] = [args[0], args[1], args[2]]
+#         b_z = True
+#     if message_type == "z_c":
+#         DEBUGGER["zombie_create"] = args[0]
+#         z_c = True
+#     if message_type == "b_d":
+#         DEBUGGER["bullet_direction"] = args[0]
+#         b_d = True
+#     if message_type == "z_r":
+#         DEBUGGER["zombie_removed"] = args[0]
+#         z_r = True
+#     if message_type == "d_i":
+#         DEBUGGER["dropped_item"] = args[0]
+#         d_i = True
+#     if message_type == "g_i":
+#         DEBUGGER["get_item"] = args[0]
+#         g_i = True
+#     # \033[H resets the terminal cursor back to the top left corner (Line 1, Column 1)
+#     # \033[2J return cursur to top left of the terminal
+#     # This overwrites the old text in place instead of creating infinite scrolling lines!
+#     # Define a standard width for the text column before the arrow starts [W] character
+#     W = 80
 
-    # PHASE A: Clear screen and draw the static blocks
-    print(f"\033[2J\033[H" + 
-f"""================= 🛠️  GAME ENGINE DIAGNOSTICS =================
-[SYSTEM] Booting Engine Main Core...
-[SYSTEM] Loading visual weapon arrays and survivor files...
-[SYSTEM] Assets fully operational and armed.
+#     # PHASE A: Clear screen and draw the static blocks
+#     print(f"\033[2J\033[H" + 
+# f"""================= 🛠️  GAME ENGINE DIAGNOSTICS =================
+# [SYSTEM] Booting Engine Main Core...
+# [SYSTEM] Loading visual weapon arrays and survivor files...
+# [SYSTEM] Assets fully operational and armed.
 
-{f"[+] Zombie {DEBUGGER['zombie_create']} has been created!":<{W}}{'<=='  if z_c else ''}           
-{f"[+] Zombie {DEBUGGER['zombie_removed']} has been removed!":<{W}}{'<=='  if z_r else ''}           
-{f"[!] Player Position : ({DEBUGGER['p_position_x']}, {DEBUGGER['p_position_y']})":<{W}}{'<=='  if p_p else ''}          
-{f"[!] Player State : ({DEBUGGER['p_move']})":<{W}}{'<=='  if p_m else ''}          
-{f"[!] Player Ammo : {DEBUGGER['p_ammo'][0]}/{DEBUGGER['p_ammo'][1]}, Count : {DEBUGGER['p_ammo'][2]}, Type : '{DEBUGGER['p_ammo'][3]}/{DEBUGGER['p_ammo'][4]}' ":<{W}}{'<=='  if p_a else ''}
-{f"[!] Mouse Position : ({DEBUGGER['mouse_position_x']}, {DEBUGGER['mouse_position_y']})":<{W}}{'<=='  if m_p else ''}
-{f"[!] Mouse Direction : ({DEBUGGER['bullet_direction']})":<{W}}{'<=='  if b_d else ''}
-{f"[!] Bullet - Zombie Collision Detection : ({DEBUGGER['bullet_zombie_collision'][0]}, {DEBUGGER['bullet_zombie_collision'][1]}, Damage = {DEBUGGER['bullet_zombie_collision'][2]})":<{W}}{'<=='  if b_z else ''}          
-{f"[!] Zombie - Tree Collision Detection : ({DEBUGGER['zombie_tree_collision'][0]}, {DEBUGGER['zombie_tree_collision'][1]})":<{W}}{'<=='  if z_t else ''}          
-{f"[!] Zombie - Zombie Collision Detection : ({DEBUGGER['zombie_zombie_collision'][0]}, {DEBUGGER['zombie_zombie_collision'][1]})":<{W}}{'<=='  if z_z else ''} \n""", end="")
+# {f"[+] Zombie {DEBUGGER['zombie_create']} has been created!":<{W}}{'<=='  if z_c else ''}           
+# {f"[-] Zombie {DEBUGGER['zombie_removed']} has been removed!":<{W}}{'<=='  if z_r else ''}           
+# {f"[+] Item {DEBUGGER['dropped_item']} has been dropped!":<{W}}{'<=='  if d_i else ''}           
+# {f"[-] Item {DEBUGGER['get_item']} has been taken!":<{W}}{'<=='  if g_i else ''}           
+# {f"[!] Player Position : ({DEBUGGER['p_position_x']}, {DEBUGGER['p_position_y']})":<{W}}{'<=='  if p_p else ''}          
+# {f"[!] Player State : ({DEBUGGER['p_move']})":<{W}}{'<=='  if p_m else ''}          
+# {f"[!] Player Health : ({DEBUGGER['p_health']})":<{W}}{'<=='  if p_h else ''}          
+# {f"[!] Player Ammo : {DEBUGGER['p_ammo'][0]}/{DEBUGGER['p_ammo'][1]}, Count : {DEBUGGER['p_ammo'][2]}, Type : '{DEBUGGER['p_ammo'][3]}/{DEBUGGER['p_ammo'][4]}' ":<{W}}{'<=='  if p_a else ''}
+# {f"[!] Mouse Position : ({DEBUGGER['mouse_position_x']}, {DEBUGGER['mouse_position_y']})":<{W}}{'<=='  if m_p else ''}
+# {f"[!] Mouse Direction : ({DEBUGGER['bullet_direction']})":<{W}}{'<=='  if b_d else ''}
+# {f"[!] Bullet - Zombie Collision Detection : ({DEBUGGER['bullet_zombie_collision'][0]}, {DEBUGGER['bullet_zombie_collision'][1]}, Damage = {DEBUGGER['bullet_zombie_collision'][2]})":<{W}}{'<=='  if b_z else ''}          
+# {f"[!] Zombie - Tree Collision Detection : ({DEBUGGER['zombie_tree_collision'][0]}, {DEBUGGER['zombie_tree_collision'][1]})":<{W}}{'<=='  if z_t else ''}          
+# {f"[!] Zombie - Zombie Collision Detection : ({DEBUGGER['zombie_zombie_collision'][0]}, {DEBUGGER['zombie_zombie_collision'][1]})":<{W}}{'<=='  if z_z else ''} \n""", end="")
 
-    print("\n==============================================================")
+#     print("\n==============================================================")
 
 def bullet_zombie_collision(bullet, zombies):
     for zombie in zombies:
@@ -79,6 +93,16 @@ def bullet_zombie_collision(bullet, zombies):
     return {
         "bullet_die":False,
     }
+    
+def player_item_collision(item, player):
+    if item.rect.colliderect(player.rect):
+        item.is_taked = True
+        if item.type in ["SniperAmmo", "Auto"]:
+            player.weapon_ammo_count += item.amount
+        elif item.type == "Health" :
+            player.health += item.amount
+        return True
+    return False
     
 def bullet_tree_collision(bullet, trees):
     for tree in trees:
@@ -122,4 +146,4 @@ def get_sound_randomly(type, sounds):
 
 def get_music_randomly(type, musics):
     return musics[type][random.randrange(0, len(musics[type]))]
-  
+ 

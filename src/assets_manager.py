@@ -7,6 +7,7 @@ animations = {}
 sprites = {}
 sounds = {}
 musics = {}
+items = {}
 
 def get_path_files(path):
     files = []
@@ -51,7 +52,7 @@ def load_all_assets():
     Loads texture atlases and slices up animation sheets before the engine turns over.
     This prevents mid-game micro-stutters and maximizes performance.
     """
-    global animations, sprites, musics, sounds
+    global animations, sprites, musics, sounds, items
         
     # ==============================================================================
     # 📥 1. LOAD RAW TEXTURES FROM THE FILESYSTEM BUNKERS
@@ -69,8 +70,14 @@ def load_all_assets():
     player_strafe_r_atk_png     = image_load("assets/StrafeRightAttack.png")
     player_damage_png           = image_load("assets/TakeDamage.png")
     
+    # Dropped Items
+    ammo_png                    = image_load("assets/Dropped_Items.png")
+    money                       = image_load("assets/Dropped_Items.png")
+    health_png                  = image_load("assets/Dropped_Items.png")
+    
     # Opposition & Environment Atlases
-    zombie_move_png             = image_load("assets/zombie.png")
+    # zombie_move_png             = image_load("assets/zombie.png")
+    zombie_move_png             = image_load("assets/zombie_move.png")
     zombie_die_png              = image_load("assets/Die.png")
     trees_png                   = image_load("assets/Trees1.png")
     
@@ -103,21 +110,35 @@ def load_all_assets():
         source_row = z_row_mapping[row_idx]
         for col in range(8):
             frame = zombie_die_png.subsurface((col * 64, source_row * 64, 64, 64))
-            row_frames.append(pygame.transform.scale(frame, (70, 70)))
+            row_frames.append(pygame.transform.scale(frame, (90, 90)))
         all_z_die_frames[target_dir] = row_frames
     animations["zombie_die"] = all_z_die_frames
-
+    
+    
     # Zombie Walk Slicing configurations (8 rows by 8 frames)
-    animations["zombie_move"] = {
-        "down_left":  [zombie_move_png.subsurface(((i + 4) * 125, 0, 125, 120)) for i in range(8)],
-        "left":       [zombie_move_png.subsurface(((i + 4) * 125, 125, 110, 125)) for i in range(8)],
-        "up_left":    [zombie_move_png.subsurface(((i + 4) * 125, 250, 125, 120)) for i in range(8)],
-        "up":         [zombie_move_png.subsurface(((i + 4) * 125, 375, 125, 120)) for i in range(8)],
-        "up_right":   [zombie_move_png.subsurface(((i + 4) * 125, 500, 125, 120)) for i in range(8)],
-        "right":      [zombie_move_png.subsurface(((i + 4) * 125, 625, 125, 120)) for i in range(8)],
-        "down_right": [zombie_move_png.subsurface(((i + 4) * 125, 750, 125, 120)) for i in range(8)],
-        "down":       [zombie_move_png.subsurface(((i + 4) * 125, 875, 125, 120)) for i in range(8)],
-    }
+    all_z_move_frames = {}
+    z_directions = ["right", "down_right", "down", "down_left", "left", "up_left", "up", "up_right"]
+    z_row_mapping = [5, 6, 7, 0, 1, 2, 3, 4]  # Slices matching old custom atlas design allocations
+    
+    for row_idx, target_dir in enumerate(z_directions):
+        row_frames = []
+        source_row = z_row_mapping[row_idx]
+        for col in range(8):
+            frame = zombie_move_png.subsurface((col * 80, source_row * 64, 80, 64))
+            row_frames.append(pygame.transform.scale(frame, (80, 80)))
+        all_z_move_frames[target_dir] = row_frames
+    animations["zombie_move"] = all_z_move_frames
+
+    # animations["zombie_move"] = {
+    #     "down_left":  [zombie_move_png.subsurface(((i + 4) * 125, 0, 125, 120)) for i in range(8)],
+    #     "left":       [zombie_move_png.subsurface(((i + 4) * 125, 125, 110, 125)) for i in range(8)],
+    #     "up_left":    [zombie_move_png.subsurface(((i + 4) * 125, 250, 125, 120)) for i in range(8)],
+    #     "up":         [zombie_move_png.subsurface(((i + 4) * 125, 375, 125, 120)) for i in range(8)],
+    #     "up_right":   [zombie_move_png.subsurface(((i + 4) * 125, 500, 125, 120)) for i in range(8)],
+    #     "right":      [zombie_move_png.subsurface(((i + 4) * 125, 625, 125, 120)) for i in range(8)],
+    #     "down_right": [zombie_move_png.subsurface(((i + 4) * 125, 750, 125, 120)) for i in range(8)],
+    #     "down":       [zombie_move_png.subsurface(((i + 4) * 125, 875, 125, 120)) for i in range(8)],
+    # }
 
     # ==============================================================================
     # 🌲 4. SCENERY & VEGETATION TILE SET ALIGNMENTS
@@ -125,9 +146,17 @@ def load_all_assets():
     sprites["tree_1"] = pygame.transform.scale(trees_png.subsurface((0, 0, 80, 160)), (120, 240))
     sprites["bush_1"] = pygame.transform.scale(trees_png.subsurface((185, 75, 50, 50)), (80, 80))
     sprites["bush_2"] = pygame.transform.scale(trees_png.subsurface((190, 130, 40, 40)), (80, 80))
+    
+    # ==============================================================================
+    # 🖋️ 5. SCENERY & VEGETATION TILE SET ALIGNMENTS
+    # ==============================================================================
+
+    sprites["ammo"] = pygame.transform.scale(ammo_png.subsurface((192, 0, 32, 32)), (30, 30))            # start from 224 7th item
+    sprites["health_1"] = pygame.transform.scale(health_png.subsurface((0, 0, 32, 32)), (30, 30))        # start from 0 1st item
+    sprites["health_2"] = pygame.transform.scale(health_png.subsurface((32, 0, 32, 32)), (30, 30))       # start from 32 2nd item
 
     # ==============================================================================
-    # 🔊 5. SOUND EFFECTS & BALLISTICS AUDIO HARD CODING
+    # 🔊 6. SOUND EFFECTS & BALLISTICS AUDIO HARD CODING
     # ==============================================================================
     sounds["move"] = []
     sounds["fire"] = []

@@ -12,6 +12,8 @@ class Entity:
         self.y = y
         self.width = width
         self.height = height
+        
+        self.health = 100
         # Base rectangle setup fallback
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
@@ -37,10 +39,10 @@ class Player(Entity):
         self.current_frame = 0.0
         self.moving = False
         self.firing = False
-        self.speed = 5
+        self.speed = 7
         
         self.weapon_type = "Sniper"
-        self.weapon_ammo_count = 360
+        self.weapon_ammo_count = 24
         self.ammo_type = "7.62"
         self.ammo_stack = 6
         self.ammo_count = 6
@@ -171,13 +173,13 @@ class Player(Entity):
 class Zombie(Entity):
     """🧟 THE HORDE"""
     def __init__(self, x, y, move_animation_dict, die_animation_dict):
-        super().__init__(x, y, width=70, height=70)
+        super().__init__(x, y, width=75, height=75)
         self.move_animations = move_animation_dict
         self.die_animations = die_animation_dict
         self.move_direction = "down"
         self.die_direction = "down"
         self.is_dead = False
-        self.speed = 2
+        self.speed = 4
         self.health = 100
         self.move_current_frame = 0
         self.die_current_frame = 0
