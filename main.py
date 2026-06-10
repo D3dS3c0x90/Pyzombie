@@ -17,21 +17,6 @@ from src.entities import Player, Zombie, Bullet, Tree
 def get_random_value(choices=[]):
     return random.randint(0, 100) if len(choices) == 0 else random.choice(choices)
 
-def create_zombie(game):
-    while True:
-        time.sleep(1.0)
-        if len(game.zombies) < 50:
-            zombie = Zombie(
-                random.randint(100, 4900), 
-                random.randint(100, 4900), 
-                assets.animations["zombie_move"],
-                assets.animations["zombie_die"]
-            )
-            game.zombies.append(zombie)
-        if len(game.zombies) >= 10 and game.zombies[0].is_dead:
-            manage.debugger("z_r", game.zombies[0].ID)
-            del game.zombies[0]
-
 class GameEngine:
     """
     🕹️ THE CORE GAME CONTROLLER (v2.5)
@@ -85,6 +70,7 @@ class GameEngine:
         self.camera_x       = 0
         self.camera_y       = 0
         self.count          = 0
+        self.global_counter = 1
         
         # Game loop condition control variable
         self.running = True
@@ -98,6 +84,19 @@ class GameEngine:
             self.clock.tick(FPS)       # Maintain rigid framerate pacing
         pygame.quit()
         sys.exit()
+        
+    def create_zombie(self, zombies):
+        if len(zombies) < 50:
+            zombie = Zombie(
+                random.randint(100, 4900), 
+                random.randint(100, 4900), 
+                assets.animations["zombie_move"],
+                assets.animations["zombie_die"]
+            )
+            game.zombies.append(zombie)
+        if len(game.zombies) >= 10 and game.zombies[0].is_dead:
+            manage.debugger("z_r", game.zombies[0].ID)
+            del game.zombies[0]
 
     def handle_events(self):
         """Captures hardware peripherals interactions."""
@@ -222,6 +221,11 @@ class GameEngine:
             if notify.update():
                 self.notifications.remove(notify)
 
+        if self.global_counter % 60 == 0:
+            self.create_zombie(self.zombies)
+            self.global_counter = 1
+        else:
+            self.global_counter += 1
         # 🎥 DYNAMIC VIRTUAL CAMERA TRACKING
         # Centers screen viewfinder view arrays exactly over the player's world position vector,
         # clamping the values down so the view can never scroll outside the active world dimensions.
@@ -281,8 +285,8 @@ class GameEngine:
         # pygame.draw.rect(self.screen, (255, 0, 0), (self.player.rect.x - self.camera_x, self.player.rect.y - self.camera_y, self.player.rect.width, self.player.rect.height), 2)
         
         # Draw Zombie Hitboxes
-        for zombie in self.zombies:
-            pygame.draw.rect(self.screen, (255, 0, 0), (zombie.rect.x - self.camera_x, zombie.rect.y - self.camera_y, zombie.rect.width, zombie.rect.height), 2)
+        # for zombie in self.zombies:
+        #     pygame.draw.rect(self.screen, (255, 0, 0), (zombie.rect.x - self.camera_x, zombie.rect.y - self.camera_y, zombie.rect.width, zombie.rect.height), 2)
         
         # # Draw Trees Hitboxes
         # for tree in self.trees:
@@ -317,7 +321,4 @@ class GameEngine:
 
 if __name__ == "__main__":
     game = GameEngine()
-    thread = threading.Thread(target=create_zombie, args=(game,))
-    thread.daemon = True
-    thread.start()
     game.run()

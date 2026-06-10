@@ -151,9 +151,9 @@ def load_all_assets():
     # 🖋️ 5. SCENERY & VEGETATION TILE SET ALIGNMENTS
     # ==============================================================================
 
-    sprites["ammo"] = pygame.transform.scale(ammo_png.subsurface((192, 0, 32, 32)), (30, 30))            # start from 224 7th item
-    sprites["health_1"] = pygame.transform.scale(health_png.subsurface((0, 0, 32, 32)), (30, 30))        # start from 0 1st item
-    sprites["health_2"] = pygame.transform.scale(health_png.subsurface((32, 0, 32, 32)), (30, 30))       # start from 32 2nd item
+    sprites["ammo"] = pygame.transform.scale(ammo_png.subsurface((192, 0, 32, 32)), (40, 40))            # start from 224 7th item
+    sprites["health_1"] = pygame.transform.scale(health_png.subsurface((0, 0, 32, 32)), (40, 40))        # start from 0 1st item
+    sprites["health_2"] = pygame.transform.scale(health_png.subsurface((32, 0, 32, 32)), (40, 40))       # start from 32 2nd item
 
     # ==============================================================================
     # 🔊 6. SOUND EFFECTS & BALLISTICS AUDIO HARD CODING

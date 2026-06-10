@@ -39,7 +39,7 @@ class Player(Entity):
         self.current_frame = 0.0
         self.moving = False
         self.firing = False
-        self.speed = 7
+        self.speed = 5
         
         self.weapon_type = "Sniper"
         self.weapon_ammo_count = 24
@@ -179,7 +179,7 @@ class Zombie(Entity):
         self.move_direction = "down"
         self.die_direction = "down"
         self.is_dead = False
-        self.speed = 4
+        self.speed = 3
         self.health = 100
         self.move_current_frame = 0
         self.die_current_frame = 0
