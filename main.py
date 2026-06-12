@@ -1,21 +1,20 @@
 import pygame
-import os
+# import os
 import sys
 import random
-import threading
-import time
 import math
 from src.settings import *
 import src.notification as notification
 import src.minimap as minimap
 import src.items as items
+import src.player_state as player_state
 import src.assets_manager as assets
 import src.central_managment as manage
 from src.entities import Player, Zombie, Bullet, Tree
 
 
 def get_random_value(choices=[]):
-    return random.randint(0, 100) if len(choices) == 0 else random.choice(choices)
+    return random.randint(1, 101) if len(choices) == 0 else random.choice(choices)
 
 class GameEngine:
     """
@@ -39,7 +38,7 @@ class GameEngine:
         pygame.mixer.music.load(music_track)
         pygame.mixer.music.play(loops=0)
         
-        self.minimap = minimap.Minimap(size=200)
+        self.minimap = minimap.Minimap()
         
         # 🟢 SPAWN SURVIVOR UNIT
         # Pass the full animations dictionary mapping directly into our state engine
@@ -48,8 +47,8 @@ class GameEngine:
         # 🧟 SPAWN THREAT MATRICES (Zombies)
         self.zombies = [
             Zombie(
-                random.randint(100, 4900), 
-                random.randint(100, 4900), 
+                random.randint(0, WORLD_WIDTH - 10), 
+                random.randint(0, WORLD_HEIGHT - 10),  
                 assets.animations["zombie_move"],
                 assets.animations["zombie_die"]
             ) for _ in range(5)
@@ -57,20 +56,24 @@ class GameEngine:
         
         # 🌲 SPAWN MAP ENVIROMENT COLLIDERS
         self.trees = [
-            Tree(random.randint(50, 4000), random.randint(50, 4000), assets.sprites["tree_1"]) 
+            Tree(
+                random.randint(0, WORLD_WIDTH - assets.sprites["tree_1"].get_width()), 
+                random.randint(0, WORLD_HEIGHT - assets.sprites["tree_1"].get_height()),  
+                assets.sprites["tree_1"]) 
             for _ in range(50)
         ]
         
-        self.bullets            = []
-        self.damage_indicators  = []
-        self.notifications      = []
-        self.items              = []
+        self.bullets               = []
+        self.damage_indicators     = []
+        self.notifications         = []
+        self.player_indicators     = []
+        self.items                 = []
         
         # Camera initialization state boundary setups
-        self.camera_x       = 0
-        self.camera_y       = 0
-        self.count          = 0
-        self.global_counter = 1
+        self.camera_x              = 0
+        self.camera_y              = 0
+        self.count                 = 0
+        self.global_counter        = 1
         
         # Game loop condition control variable
         self.running = True
@@ -82,26 +85,27 @@ class GameEngine:
             self.update_game_states()  # Calculate real-time vector alterations
             self.render_draw_calls()   # Flush image surfaces out to screen hardware
             self.clock.tick(FPS)       # Maintain rigid framerate pacing
+            
+            manage.play_sound_randomly("crow")
+            manage.play_sound_randomly("owl")
         pygame.quit()
         sys.exit()
         
     def create_zombie(self, zombies):
         if len(zombies) < 50:
             zombie = Zombie(
-                random.randint(100, 4900), 
-                random.randint(100, 4900), 
+                random.randint(0, WORLD_WIDTH - 10), 
+                random.randint(0, WORLD_HEIGHT - 10), 
                 assets.animations["zombie_move"],
                 assets.animations["zombie_die"]
             )
             game.zombies.append(zombie)
         if len(game.zombies) >= 10 and game.zombies[0].is_dead:
-            manage.debugger("z_r", game.zombies[0].ID)
             del game.zombies[0]
 
     def handle_events(self):
         """Captures hardware peripherals interactions."""
         for event in pygame.event.get():
-            manage.debugger("p_a", self.player.ammo_count, self.player.ammo_stack, self.player.weapon_ammo_count, self.player.ammo_type, self.player.weapon_type)
             if event.type == pygame.QUIT:
                 self.running = False
             
@@ -158,6 +162,16 @@ class GameEngine:
         # Route pathfinding instructions for the horde tracking loops
         for zombie in self.zombies:
             zombie.update_ai(self.player, self.zombies, self.trees)
+            if manage.player_zombie_collision(self.player, zombie):
+                self.player_indicators.append(
+                    notification.DamageNumber(
+                        color=(100, 100, 0),
+                        lifetime=100,
+                        x=self.player.x + 40, 
+                        y=self.player.y +10, 
+                        amount=zombie.damage
+                        )
+                )
             
         # Iterate over tracer bullets array backward or as slice copies to prevent item deletion index skips!
         for bullet in self.bullets[:]:
@@ -165,33 +179,37 @@ class GameEngine:
                 self.bullets.remove(bullet)
             
             # Bullet - Zombie Damage
-            decision = manage.bullet_zombie_collision(bullet, self.zombies)
+            decision = manage.bullet_zombie_collision(bullet, self.zombies, self.player)
             if decision["bullet_die"]:
                 if decision["zombie"].health <= 0:
                     decision["zombie"].is_dead = True
                     
                     # Make items dropped randomly
-                    if get_random_value() >= 80:
-                        value = get_random_value(["ammo", "health_1", "health_2"])
-                        if value == "ammo":
-                            created_item = items.Ammo(
-                                        decision["zombie"].x, 
-                                        decision["zombie"].y,
-                                        assets.sprites["ammo"],
-                                        random.randrange(10, 25),
-                                        "SniperAmmo"
-                                    )
-                        elif value in ["health_1", "health_2"]:
-                            created_item = items.Health(
+                    random_value = get_random_value()
+                    
+                    created_item = items.Health(
                                         x=decision["zombie"].x, 
                                         y=decision["zombie"].y,
-                                        image=assets.sprites[value],
+                                        image=assets.sprites[random.choice(["health_1", "health_2"])],
                                         type="Health"
-                                    )
+                                    ) if random_value >= 90 else items.Coins(
+                                        x=decision["zombie"].x, 
+                                        y=decision["zombie"].y,
+                                        image=assets.sprites[random.choice(["coins_1", "coins_2"])],
+                                        amount=random.randrange(10, 18),
+                                        type="Coins"
+                                    ) if random_value >= 70 else items.Ammo(
+                                        decision["zombie"].x, 
+                                        decision["zombie"].y,
+                                        assets.sprites[random.choice(["ammo"])],
+                                        random.randrange(8, 15),
+                                        "SniperAmmo"
+                                    ) if random_value >= 45 else None
+
+                    if created_item:
                         created_item.set_name_id(created_item.type, self.count)
                         self.items.append(created_item)
                         self.count += 1
-                        manage.debugger("d_i", self.items[-1].ID, self.count)
                             
                 bullet.traveled = 800
                 # 💥 SPAWN THE DAMAGE TEXT INSTANCE HERE!
@@ -217,11 +235,15 @@ class GameEngine:
             if indicator.update():
                 self.damage_indicators.remove(indicator)
                 
+        for indicator in self.player_indicators[:]:
+            if indicator.update():
+                self.player_indicators.remove(indicator)
+                
         for notify in self.notifications[:]:
             if notify.update():
                 self.notifications.remove(notify)
 
-        if self.global_counter % 60 == 0:
+        if self.global_counter % (FPS * int(get_random_value() * 0.5) + 1) == 0:
             self.create_zombie(self.zombies)
             self.global_counter = 1
         else:
@@ -237,7 +259,7 @@ class GameEngine:
         # Clean background field canvas buffer
         self.screen.fill(GREEN_BG)
 
-        # 2. DRAW OPPOSITION ENEMY GROUPS
+        # 1. DRAW OPPOSITION ENEMY GROUPS
         for zombie in self.zombies: 
             if zombie.is_dead:
                 zombie_die_img = zombie.get_current_image(flag="die")
@@ -245,20 +267,26 @@ class GameEngine:
             else:
                 zombie_move_img = zombie.get_current_image()
                 self.screen.blit(zombie_move_img, (zombie.x - self.camera_x, zombie.y - self.camera_y + (zombie.height // 2)))
+                zombie.draw_health_bar(self.screen, zombie.x - self.camera_x, zombie.y - self.camera_y + (zombie.height // 2) + 70)
         
         # 2. DROP ITEMS & PROCESS PICKUP TRIGGER
         for item in self.items[:]:
             if not item.is_taked and manage.player_item_collision(item, self.player):
                 item.is_taked = True
+                if item.type == "Coins":
+                    self.player.coins += item.amount
+                    manage.get_sound_randomly("coins", assets.sounds).play()
+                elif item.type in ["SniperAmmo",]:
+                    manage.get_sound_randomly("ammo", assets.sounds).play()
+                elif item.type in ["Health",]:
+                    manage.get_sound_randomly("health", assets.sounds).play()
                 notify_icon = pygame.transform.scale(item.image, (32, 32))
-                manage.debugger("p_h", self.player.health)
                 self.notifications.append(
                     notification.Notification(
                         text=f"+{item.amount} {item.type} ",
                         image=notify_icon
                     )
                 )
-                manage.debugger("g_i", item.ID)
                 
             if item.is_taked:
                 self.items.remove(item)
@@ -273,7 +301,7 @@ class GameEngine:
         p_draw_x = (self.player.x - self.camera_x) - (player_img.get_width() - self.player.width) // 2
         p_draw_y = (self.player.y - self.camera_y) - (player_img.get_height() - self.player.height) // 2
         self.screen.blit(player_img, (p_draw_x, p_draw_y))
-        
+                
         # 4. DRAW ENVIRONMENT SCENERY (Y-sorted layer offset)     
         for tree in self.trees:
             self.screen.blit(tree.image, (tree.x - self.camera_x, (tree.y - self.camera_y) + 100))
@@ -286,7 +314,11 @@ class GameEngine:
         
         # Draw Zombie Hitboxes
         # for zombie in self.zombies:
-        #     pygame.draw.rect(self.screen, (255, 0, 0), (zombie.rect.x - self.camera_x, zombie.rect.y - self.camera_y, zombie.rect.width, zombie.rect.height), 2)
+            # pygame.draw.rect(self.screen, (255, 0, 0), (zombie.rect.x - self.camera_x, zombie.rect.y - self.camera_y, zombie.rect.width, zombie.rect.height), 2)
+
+            ## Damage Rect Collision Detection
+            # damage_rect = zombie.damage_rect.move(-self.camera_x, -self.camera_y)
+            # pygame.draw.rect(self.screen, (0, 0, 255), damage_rect, 2)
         
         # # Draw Trees Hitboxes
         # for tree in self.trees:
@@ -294,6 +326,12 @@ class GameEngine:
             
         # ✨ DRAW FLOATING the notifications!
         for indicator in self.damage_indicators:
+            # Convert their world spawn positions to screen view coordinates
+            dmg_screen_x = indicator.world_x - self.camera_x
+            dmg_screen_y = indicator.world_y - self.camera_y
+            indicator.draw(self.screen, dmg_screen_x, dmg_screen_y)
+            
+        for indicator in self.player_indicators:
             # Convert their world spawn positions to screen view coordinates
             dmg_screen_x = indicator.world_x - self.camera_x
             dmg_screen_y = indicator.world_y - self.camera_y
@@ -315,6 +353,15 @@ class GameEngine:
             self.screen.get_width(),
             self.screen.get_height()
         )
+        
+        player_info = player_state.PlayerState(
+            self.screen,
+            [0, SCREEN_HEIGHT - 120],
+            [175, SCREEN_HEIGHT - 105],
+            self.player
+        )
+        
+        player_info.draw()
   
         # Swap framebuffers 
         pygame.display.flip()

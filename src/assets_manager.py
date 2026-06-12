@@ -58,27 +58,32 @@ def load_all_assets():
     # 📥 1. LOAD RAW TEXTURES FROM THE FILESYSTEM BUNKERS
     # ==============================================================================
     # Core Player Sheets (New Expanded Action Sets)
-    player_idle_png             = image_load("assets/Idle.png")
-    player_run_png              = image_load("assets/Run.png")
-    player_attack_png           = image_load("assets/Attack1.png")
-    player_run_attack_png       = image_load("assets/RunAttack.png")
-    player_run_back_png         = image_load("assets/RunBackwards.png")
-    player_run_back_atk_png     = image_load("assets/RunBackwardsAttack.png")
-    player_strafe_l_png         = image_load("assets/StrafeLeft.png")
-    player_strafe_l_atk_png     = image_load("assets/StrafeLeftAttack.png")
-    player_strafe_r_png         = image_load("assets/StrafeRight.png")
-    player_strafe_r_atk_png     = image_load("assets/StrafeRightAttack.png")
-    player_damage_png           = image_load("assets/TakeDamage.png")
+    player_idle_png             = image_load("assets/Player/Idle.png")
+    player_run_png              = image_load("assets/Player/Run.png")
+    player_attack_png           = image_load("assets/Player/Attack1.png")
+    player_run_attack_png       = image_load("assets/Player/RunAttack.png")
+    player_run_back_png         = image_load("assets/Player/RunBackwards.png")
+    player_run_back_atk_png     = image_load("assets/Player/RunBackwardsAttack.png")
+    player_strafe_l_png         = image_load("assets/Player/StrafeLeft.png")
+    player_strafe_l_atk_png     = image_load("assets/Player/StrafeLeftAttack.png")
+    player_strafe_r_png         = image_load("assets/Player/StrafeRight.png")
+    player_strafe_r_atk_png     = image_load("assets/Player/StrafeRightAttack.png")
+    player_damage_png           = image_load("assets/Player/TakeDamage.png")
+    
+    player_state_png            = image_load("assets/Player/player_state.png")
+    player_health_bar_png       = image_load("assets/Player/player_health_bar.png")
     
     # Dropped Items
-    ammo_png                    = image_load("assets/Dropped_Items.png")
-    money                       = image_load("assets/Dropped_Items.png")
-    health_png                  = image_load("assets/Dropped_Items.png")
+    ammo_png                    = image_load("assets/Player/Dropped_Items.png")
+    coins_png                   = image_load("assets/Player/Dropped_Items.png")
+    health_png                  = image_load("assets/Player/Dropped_Items.png")
     
-    # Opposition & Environment Atlases
-    # zombie_move_png             = image_load("assets/zombie.png")
-    zombie_move_png             = image_load("assets/zombie_move.png")
-    zombie_die_png              = image_load("assets/Die.png")
+    # Zombie's dependences
+    zombie_move_png             = image_load("assets/Zombie/zombie_move.png")
+    zombie_die_png              = image_load("assets/Zombie/Die.png")
+    zombie_health_bar_png       = image_load("assets/Zombie/zombie_health_bar.png")
+    
+    # Trees
     trees_png                   = image_load("assets/Trees1.png")
     
     # ==============================================================================
@@ -96,7 +101,7 @@ def load_all_assets():
     animations["StrafeRight"]        = slice_player_sheet(player_strafe_r_png, total_cols=14)
     animations["StrafeRightAttack"]  = slice_player_sheet(player_strafe_r_atk_png, total_cols=14)
     animations["TakeDamage"]         = slice_player_sheet(player_damage_png, total_cols=14)
-
+    
     # ==============================================================================
     # 🧟 3. SLICE THREAT MATRIX ASSET PACKS (Zombies)
     # ==============================================================================
@@ -148,35 +153,84 @@ def load_all_assets():
     sprites["bush_2"] = pygame.transform.scale(trees_png.subsurface((190, 130, 40, 40)), (80, 80))
     
     # ==============================================================================
-    # 🖋️ 5. SCENERY & VEGETATION TILE SET ALIGNMENTS
+    # 🖋️ 5. DROP ITEMS FOR PLAYER
     # ==============================================================================
 
-    sprites["ammo"] = pygame.transform.scale(ammo_png.subsurface((192, 0, 32, 32)), (40, 40))            # start from 224 7th item
-    sprites["health_1"] = pygame.transform.scale(health_png.subsurface((0, 0, 32, 32)), (40, 40))        # start from 0 1st item
-    sprites["health_2"] = pygame.transform.scale(health_png.subsurface((32, 0, 32, 32)), (40, 40))       # start from 32 2nd item
-
+    sprites["ammo"] = pygame.transform.scale(ammo_png.subsurface((192, 0, 32, 32)), (40, 40))               # start from 224 7th item
+    sprites["coins_1"] = pygame.transform.scale(coins_png.subsurface((64, 0, 32, 32)), (40, 40))            # start from 64 3rd item
+    sprites["coins_2"] = pygame.transform.scale(coins_png.subsurface((96, 0, 32, 32)), (40, 40))            # start from 96 4th item
+    sprites["health_1"] = pygame.transform.scale(health_png.subsurface((0, 0, 32, 32)), (40, 40))           # start from 0 1st item
+    sprites["health_2"] = pygame.transform.scale(health_png.subsurface((32, 0, 32, 32)), (40, 40))          # start from 32 2nd item
+    
+    sprites["player_state"] = pygame.transform.scale(player_state_png.subsurface((0, 0, player_state_png.get_width(), player_state_png.get_height())), (player_state_png.get_width(), player_state_png.get_height() + 30))                            # normal image without scalling
+    
     # ==============================================================================
-    # 🔊 6. SOUND EFFECTS & BALLISTICS AUDIO HARD CODING
+    # 🖋️ 6. ALL ZOMBIE HEALTH BAR CASES
     # ==============================================================================
-    sounds["move"] = []
+    
+    sprites["zombie_health_bar"] = []
+    for col in range(12):
+        sub_img = zombie_health_bar_png.subsurface((col * 36, 0, 36, 7))
+        scaled_frame = pygame.transform.scale(sub_img, (100, 15)).copy()
+        
+        sprites["zombie_health_bar"].append(scaled_frame)
+        
+    # ==============================================================================
+    # 🖋️ 6. ALL PLAYER HEALTH BAR CASES
+    # ==============================================================================
+    
+    sprites["player_health_bar"] = []
+    for col in range(11):
+        sub_img = player_health_bar_png.subsurface((col * 224, 0, 224, 48))
+        scaled_frame = pygame.transform.scale(sub_img, (200, 20)).copy()
+        
+        sprites["player_health_bar"].append(scaled_frame)
+        
+    # ==============================================================================
+    # 🔊 7. SOUND EFFECTS & BALLISTICS AUDIO HARD CODING
+    # ==============================================================================
     sounds["fire"] = []
     sounds["no_ammo"] = []
     sounds["reload"] = []
+    sounds["collect"] = []
+    
+    sounds["move"] = []
+    
     sounds["crow"] = []
+    sounds["owl"] = []
+    
+    sounds["coins"] = []
+    sounds["ammo"] = []
+    sounds["health"] = []
+    
     musics["background"] = []
     
     # Load primary action sounds safely
     sounds["fire"].append(pygame.mixer.Sound("assets/sounds/weapon/firing.ogg"))
     sounds["no_ammo"].append(pygame.mixer.Sound("assets/sounds/weapon/no_ammo.ogg"))
     sounds["reload"].append(pygame.mixer.Sound("assets/sounds/weapon/reload.ogg"))
+    sounds["ammo"].append(pygame.mixer.Sound("assets/sounds/weapon/collect.ogg"))
+    sounds["health"].append(pygame.mixer.Sound("assets/sounds/bags/health.ogg"))
     
     # Footstep directory loop trackers
     for move_sound_path in get_path_files("assets/sounds/footsteps"):
         sounds["move"].append(pygame.mixer.Sound(str(move_sound_path)))
         
-    # Ambient sound arrays 
+    # Crow sound arrays 
     for crow_sound_path in get_path_files("assets/sounds/crow"):
         sounds["crow"].append(pygame.mixer.Sound(str(crow_sound_path)))
+        
+    # Owl sound arrays 
+    for owl_sound_path in get_path_files("assets/sounds/owl"):
+        sounds["owl"].append(pygame.mixer.Sound(str(owl_sound_path)))
+    
+    # Coins sound arrays 
+    for coins_sound_path in get_path_files("assets/sounds/coins"):
+        sounds["coins"].append(pygame.mixer.Sound(str(coins_sound_path)))
+        
+    # Health sound arrays 
+    # for health_sound_path in get_path_files("assets/sounds/bags"):
+    #     sounds["health"].append(pygame.mixer.Sound(str(health_sound_path)))
     
     # Keep background soundtracks as standard paths for streaming chunks
     for background_path in get_path_files("assets/waves/horror"):

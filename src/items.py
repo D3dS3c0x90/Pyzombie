@@ -47,10 +47,14 @@ class Ammo(DropedItem):
     def __init__(self, x, y, image, amount, type):
         super().__init__(x, y, image, amount, type)
         
+class Coins(DropedItem):
+    def __init__(self, x, y, image, amount, type):
+        super().__init__(x, y, image, amount, type)
+        
 class Health(DropedItem):
     def __init__(self, x, y, image, type, amount=None):
         super().__init__(x, y, image, amount, type)
-        self.amount = random.choice([10, 25, 50, 5, 45, 30])
+        self.amount = random.choice([10, 15, 5, 20, 25])
         
 class Chest(Items):
     def __init__(self, x, y):

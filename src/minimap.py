@@ -1,14 +1,15 @@
 import pygame
+from src.settings import WORLD_HEIGHT, WORLD_WIDTH
 
 
 class Minimap:
-    def __init__(self, size=150, margin=15, scale_factor=0.05):
+    def __init__(self, margin=5, scale_factor=0.04):
         """
         size: The pixel width and height of the minimap box.
         margin: How far from the top-left edge of the screen the box sits.
         scale_factor: 0.05 means 5% of real world sizes (e.g., 2000 world px = 100 minimap px)
         """
-        self.size = size
+        self.size = WORLD_WIDTH * scale_factor
         self.margin = margin
         self.scale = scale_factor
         

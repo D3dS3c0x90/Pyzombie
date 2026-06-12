@@ -54,8 +54,8 @@ class TextMessage:
         surface.blit(combined_surface, (start_x, start_y))
 
 class DamageNumber(TextMessage):
-    def __init__(self, x, y, amount, color=(255, 0, 0)):
-        super().__init__(text="", amount=amount, color=color, lifetime=30, speed=2)
+    def __init__(self, x, y, amount, color=(255, 0, 0), lifetime=30):
+        super().__init__(text="", amount=amount, color=color, lifetime=lifetime, speed=2)
         self.world_x = x
         self.world_y = y
         

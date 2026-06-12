@@ -8,12 +8,13 @@ from src.settings import *
 class Entity:
     """Class to manage base positions, sizes, and physics rect components."""
     def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+        self.x                  = x
+        self.y                  = y
+        self.width              = width
+        self.height             = height
         
-        self.health = 100
+        self.health             = 200
+        self.health_limit       = 200
         # Base rectangle setup fallback
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
@@ -23,33 +24,55 @@ class Entity:
         self.rect.y = self.y
         self.rect.width = self.width
         self.rect.height = self.height
+        
+    def health_system(self, entity=None, health=None):
+        if entity:
+            self.health -= entity.damage
+            if self.health <= 0:
+                self.is_dead = True
+        if health:
+            if self.health_limit >= self.health + health:
+                self.health += health
+            else:
+                self.health = self.health_limit
 
+    def get_health_bar_index(self, slices):
+            base = self.health_limit / slices
+            value = self.health_limit - self.health
+
+            idx = int(value // base)
+            
+            return max(0, min(idx, slices - 1))
 
 # ==============================================================================
 # 🧑‍🚀 THE UPDATED SURVIVOR CLASS (Inheriting from Entity)
 # ==============================================================================
 class Player(Entity):
-    def __init__(self, x, y, animations_hub):
+    def __init__(self, x, y, animations):
         # Pass positioning specifications right up into the Entity base class layout
         super().__init__(x, y, width=60, height=90)
         
-        self.anims = animations_hub
-        self.move_direction = "down"
+        self.animations         = animations
+        self.move_direction     = "down"
         
-        self.current_frame = 0.0
-        self.moving = False
-        self.firing = False
-        self.speed = 5
+        self.is_dead = False
         
-        self.weapon_type = "Sniper"
-        self.weapon_ammo_count = 24
-        self.ammo_type = "7.62"
-        self.ammo_stack = 6
-        self.ammo_count = 6
+        self.current_frame      = 0.0
+        self.moving             = False
+        self.firing             = False
+        self.speed              = 5
         
-        self.step_counter = 0
-        self.step_timer = 20
+        self.weapon_type        = "Sniper"
+        self.weapon_ammo_count  = 24
+        self.ammo_type          = "7.62"
+        self.ammo_stack         = 6
+        self.ammo_count         = 6
         
+        self.coins              = 0
+        
+        self.step_counter       = 0
+        self.step_timer         = 20
+                
         # ⚡ ANIMATION CYCLE SPEEDS
         self.animation_speed = 0.2       # Default walk/idle speed
         self.fire_animation_speed = 0.6  # Snappy combat weapon speed
@@ -111,7 +134,6 @@ class Player(Entity):
             self.move_direction = manage.get_angle(dx, dy)
         
         # 🛠️ POSITION DEBUGGER ENABLED
-        manage.debugger("p_p", self.x, self.y)
 
     def determine_action_state(self):
         if not self.firing:
@@ -122,7 +144,6 @@ class Player(Entity):
 
     def update_animation(self, action_state):
         # 🛠️ MOVEMENT STATE DEBUGGER ENABLED
-        manage.debugger("p_m", "Running" if self.moving else "Firing" if self.firing else "IDLE")
 
         # ⚡ DYNAMIC ANIMATION SPEED SELECTOR
         if "Attack" in action_state or action_state == "Attack1":
@@ -138,7 +159,7 @@ class Player(Entity):
                 manage.get_sound_randomly("move", assets.sounds).play()
                 self.step_counter = 0
 
-        animation_pool = self.anims.get(action_state, self.anims["Idle"]).get(self.move_direction, [])
+        animation_pool = self.animations.get(action_state, self.animations["Idle"]).get(self.move_direction, [])
         if len(animation_pool) == 0:
             self.current_frame = 0
             return
@@ -164,33 +185,45 @@ class Player(Entity):
             
             self.move_direction = manage.get_angle(dx, dy)
         
-        state_pool = self.anims.get(action, self.anims["Idle"])
+        state_pool = self.animations.get(action, self.animations["Idle"])
         frame_list = state_pool.get(self.move_direction, state_pool.get("down", []))
         
         frame_idx = int(self.current_frame) % max(1, len(frame_list))
         return frame_list[frame_idx]
       
+    def draw_health_bar(self, screen, x, y):
+        screen.blit(assets.sprites["player_health_bar"][self.get_health_bar_index(11)], (x, y))
 class Zombie(Entity):
     """🧟 THE HORDE"""
     def __init__(self, x, y, move_animation_dict, die_animation_dict):
         super().__init__(x, y, width=75, height=75)
+        
         self.move_animations = move_animation_dict
         self.die_animations = die_animation_dict
-        self.move_direction = "down"
-        self.die_direction = "down"
-        self.is_dead = False
-        self.speed = 3
-        self.health = 100
-        self.move_current_frame = 0
-        self.die_current_frame = 0
-        self.move_animation_speed = 0.2
-        self.die_animation_speed = 0.15
+        
+        self.move_direction         = "down"
+        self.die_direction          = "down"
+        
+        self.is_dead                = False
+        
+        self.move_current_frame     = 0
+        self.die_current_frame      = 0
+        
+        self.move_animation_speed   = 0.2
+        self.die_animation_speed    = 0.15
+        
+        self.speed                  = 3
+        self.delay                  = 0.05
+        self.step_delay             = 0.05
+        self.damage                 = random.randrange(10, 20)
+        
+        self.damage_rect            = pygame.Rect(self.x, self.y, self.width + 20, self.height + 20)
+        
         self.ID = self.set_id()
         
     def set_id(self):
         global ZOMBIE_ID
         ZOMBIE_ID += 1
-        manage.debugger("z_c", f"zombie_{ZOMBIE_ID}")
         return f"zombie_{ZOMBIE_ID}"
 
     def update_rect(self):
@@ -200,8 +233,18 @@ class Zombie(Entity):
         we shift it down towards the feet and center it horizontally.
         """
         # Adjust these numbers if you want the box tighter or looser!
-        self.rect.x = self.x + 20
-        self.rect.y = self.y + 50
+        self.rect.x = self.x + 30
+        self.rect.y = self.y + 60
+        
+    def update_damage_rect(self):
+        """
+        📐 HITBOX FOOT COMPENSATOR
+        Instead of placing the box at the top-left (0,0) of the image, 
+        we shift it down towards the feet and center it horizontally.
+        """
+        # Adjust these numbers if you want the box tighter or looser!
+        self.damage_rect.x = self.x + 20
+        self.damage_rect.y = self.y + 50
 
     def update_ai(self, player, items=[], trees=[]):
         """
@@ -231,19 +274,16 @@ class Zombie(Entity):
                 
                 for item in items:
                     if item.ID != self.ID and self.rect.colliderect(item.rect) and (item.is_dead == False and self.is_dead == False):
-                        manage.debugger("z_z", int(self.x), int(self.y))
                         self.x = old_x      # Collision! Snap back to checkpoint
                         self.update_rect()  # Sync hitbox back immediately
                         break               # Stop checking other items this frame
                     
                 for tree in trees:
                     if self.rect.colliderect(tree.rect):
-                        manage.debugger("z_t", int(self.x), int(self.y))
                         self.x = old_x      # Collision! Snap back to checkpoint
                         self.update_rect()  # Sync hitbox back immediately
                         break               # Stop checking other items this frame
-                        
-
+                
                 # ------------------------------------------------------------------
                 # ⬇️ AXIS 2: VERTICAL RESOLUTION
                 # ------------------------------------------------------------------
@@ -253,17 +293,21 @@ class Zombie(Entity):
                 
                 for item in items:
                     if item.ID != self.ID and self.rect.colliderect(item.rect) and (item.is_dead == False and self.is_dead == False):
-                        manage.debugger("z_z", int(self.x), int(self.y))
                         self.y = old_y      # Collision! Snap back to checkpoint
                         self.update_rect()  # Sync hitbox back immediately
                         break               # Stop checking other items this frame
                     
                 for tree in trees:
                     if self.rect.colliderect(tree.rect):
-                        manage.debugger("z_t", int(self.x), int(self.y))
                         self.y = old_y      # Collision! Snap back to checkpoint
                         self.update_rect()  # Sync hitbox back immediately
                         break               # Stop checking other items this frame
+                    
+                # Collision damage logic
+                if self.rect.colliderect(player.rect):
+                    self.x = old_x      # Collision! Snap back to checkpoint
+                    self.y = old_y      # Collision! Snap back to checkpoint
+                    self.update_rect()  # Sync hitbox back immediately
 
                 # 2. Angular Animation Logic: Get the angle in radians (-pi to pi)
                 self.move_direction = manage.get_angle(dx, dy)
@@ -281,12 +325,14 @@ class Zombie(Entity):
                 self.die_current_frame = len(self.die_animations[self.move_direction]) - 1
                 self.die_animation_speed = 0
         
-
     def get_current_image(self, flag="move"):
         if flag == "move":
             return self.move_animations[self.move_direction][int(self.move_current_frame)]
         elif flag == "die":
             return self.die_animations[self.die_direction][int(self.die_current_frame)]
+        
+    def draw_health_bar(self, screen, x, y):
+        screen.blit(assets.sprites["zombie_health_bar"][self.get_health_bar_index(12)], (x, y))
 
 class Bullet(Entity):
     """💥 BALLISTIC PROJECTILE LOGIC"""
@@ -310,8 +356,6 @@ class Bullet(Entity):
         self.x += self.dir_x * self.speed
         self.y += self.dir_y * self.speed
         self.update_rect()
-        manage.debugger("m_p", int(self.x), int(self.y))
-        manage.debugger("b_d", manage.get_angle(self.dir_x, self.dir_y))
         self.traveled += self.speed
         return self.traveled >= self.max_dist
 

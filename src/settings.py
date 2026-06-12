@@ -28,6 +28,8 @@ BLACK = (0, 0, 0)
 GREEN_BG = (34, 68, 34)  # Overgrown forest grass tone
 YELLOW = (255, 255, 0)    # Tracer bullet color
 
+PIXEL_FONT = "assets/fonts/Minecraft.ttf"
+
 ZOMBIE_ID, BULLET_ID = 0, 0
 
 DEBUGGER = {
