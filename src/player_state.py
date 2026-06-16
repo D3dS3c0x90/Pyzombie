@@ -1,3 +1,5 @@
+# player_state.py
+
 import pygame
 import src.assets_manager as assets
 import src.settings as settings

@@ -1,9 +1,10 @@
+# items.py
 import pygame
 import random
 
 
 class Items:
-    def __init__(self, x, y, image, amount=1, type="", width=30, height=30):
+    def __init__(self, x, y, image, amount=1, type="", width=10, height=10):
         self.x = x
         self.y = y
         self.speed = 0.5
@@ -17,7 +18,7 @@ class Items:
         self.ID = ""
         self.name = ""
         self.image = image
-        self.rect = pygame.Rect(x - 10, y - 10 , image.get_width() + 40, image.get_height() + 40)
+        self.rect = pygame.Rect(x - 10, y - 10 , image.get_width() + 10, image.get_height() + 10)
 
     def update_rect(self):
         """

@@ -1,3 +1,4 @@
+# central_managment.py
 from src.settings import *
 import src.assets_manager as assets
 import math
@@ -37,7 +38,7 @@ def player_zombie_collision(player, zombie):
 def player_item_collision(item, player):
     if item.rect.colliderect(player.rect):
         item.is_taked = True
-        if item.type in ["SniperAmmo", "Auto"]:
+        if item.type in ["RifleAmmo", "Auto"]:
             player.weapon_ammo_count += item.amount
         elif item.type == "Health" :
             player.health_system(health=item.amount)
@@ -87,7 +88,12 @@ def get_sound_randomly(type, sounds):
 def get_music_randomly(type, musics):
     return musics[type][random.randrange(0, len(musics[type]))]
 
-def play_sound_randomly(sound):
-    if random.randint(0, 2500) >= 2499:
-        get_sound_randomly(sound, assets.sounds).play()
+def play_sound_randomly(sfx, rand=False):
+    if rand:
+        if random.randint(0, 2500) < 2499: # Only plays 1/2500 times
+            return 
+        
+    get_sound_randomly(sfx, assets.sounds).play()
  
+def get_random_value(choices=[]):
+    return random.randint(1, 101) if len(choices) == 0 else random.choice(choices)

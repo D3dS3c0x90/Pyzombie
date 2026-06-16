@@ -1,3 +1,5 @@
+# entities.py
+
 import pygame
 import math
 import random
@@ -13,8 +15,8 @@ class Entity:
         self.width              = width
         self.height             = height
         
-        self.health             = 200
-        self.health_limit       = 200
+        self.health             = 100
+        self.health_limit       = 100
         # Base rectangle setup fallback
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
@@ -62,11 +64,11 @@ class Player(Entity):
         self.firing             = False
         self.speed              = 5
         
-        self.weapon_type        = "Sniper"
-        self.weapon_ammo_count  = 24
-        self.ammo_type          = "7.62"
-        self.ammo_stack         = 6
-        self.ammo_count         = 6
+        self.weapon_type        = "Rifle"
+        self.weapon_ammo_count  = 20
+        self.ammo_type          = "	5.56×45mm"
+        self.ammo_stack         = 20
+        self.ammo_count         = 20
         
         self.coins              = 0
         
@@ -87,17 +89,17 @@ class Player(Entity):
         self.rect.width = 80
         self.rect.height = 80
 
-    def reload(self, keys):
-        if keys[pygame.K_r]:
+    def reload(self, keys, mouse):
+        if keys[pygame.K_r] or mouse[2]:
             if self.ammo_count == self.ammo_stack or self.weapon_ammo_count <= 0:
                 return 
             needed = self.ammo_stack - self.ammo_count
             amount_to_load = min(needed, self.weapon_ammo_count)
             self.ammo_count += amount_to_load
             self.weapon_ammo_count -= amount_to_load
-            manage.get_sound_randomly("reload", assets.sounds).play()
+            manage.play_sound_randomly("reload")
 
-    def move(self, keys, trees):
+    def move(self, keys, trees, base):
         old_x, old_y = self.x, self.y
         dx, dy = 0, 0
 
@@ -112,7 +114,6 @@ class Player(Entity):
         for tree in trees:
             if self.rect.colliderect(tree.rect):
                 self.x = old_x
-                self.update_rect()
 
         # --- STEP 2: Vertical Checks ---
         self.y += dy
@@ -120,7 +121,16 @@ class Player(Entity):
         for tree in trees:
             if self.rect.colliderect(tree.rect):
                 self.y = old_y
-                self.update_rect()
+                
+        if self.rect.colliderect(base.rect) or self.rect.colliderect(base.rect_n) or self.rect.colliderect(base.rect_e) or self.rect.colliderect(base.rect_w):
+            self.x = old_x
+            self.y = old_y
+            
+        if self.rect.colliderect(base.door_rect_in):
+            self.y -= 250
+            
+        if self.rect.colliderect(base.door_rect_out):
+            self.y += 250
 
         # --- STEP 3: Boundary Constraints ---
         self.x = max(0, min(WORLD_WIDTH - self.width, self.x))
@@ -156,7 +166,7 @@ class Player(Entity):
         if action_state in ["Run", "RunAttack"]:
             self.step_counter += 1
             if self.step_counter >= self.step_timer:
-                manage.get_sound_randomly("move", assets.sounds).play()
+                manage.play_sound_randomly("move")
                 self.step_counter = 0
 
         animation_pool = self.animations.get(action_state, self.animations["Idle"]).get(self.move_direction, [])
@@ -217,7 +227,7 @@ class Zombie(Entity):
         self.step_delay             = 0.05
         self.damage                 = random.randrange(10, 20)
         
-        self.damage_rect            = pygame.Rect(self.x, self.y, self.width + 20, self.height + 20)
+        self.damage_rect            = pygame.Rect(self.x, self.y, self.width + 20, self.height + 30)
         
         self.ID = self.set_id()
         
@@ -233,8 +243,8 @@ class Zombie(Entity):
         we shift it down towards the feet and center it horizontally.
         """
         # Adjust these numbers if you want the box tighter or looser!
-        self.rect.x = self.x + 30
-        self.rect.y = self.y + 60
+        self.rect.x = self.x
+        self.rect.y = self.y + 40
         
     def update_damage_rect(self):
         """
@@ -243,10 +253,10 @@ class Zombie(Entity):
         we shift it down towards the feet and center it horizontally.
         """
         # Adjust these numbers if you want the box tighter or looser!
-        self.damage_rect.x = self.x + 20
-        self.damage_rect.y = self.y + 50
+        self.damage_rect.x = self.x - 10
+        self.damage_rect.y = self.y + 20
 
-    def update_ai(self, player, items=[], trees=[]):
+    def update_ai(self, player, base, items=[], trees=[]):
         """
         🎯 8-DIRECTIONAL VECTOR CHASE CALCULATIONS
         Uses trigonometry to chase the player smoothly and dynamically switch 
@@ -304,10 +314,16 @@ class Zombie(Entity):
                         break               # Stop checking other items this frame
                     
                 # Collision damage logic
-                if self.rect.colliderect(player.rect):
+                if self.rect.colliderect(player.rect) or self.rect.colliderect(base.rect) or self.rect.colliderect(base.rect_n) or self.rect.colliderect(base.rect_e) or self.rect.colliderect(base.rect_w):
                     self.x = old_x      # Collision! Snap back to checkpoint
                     self.y = old_y      # Collision! Snap back to checkpoint
                     self.update_rect()  # Sync hitbox back immediately
+                    
+                # # Collision SafeZone logic
+                # if self.rect.colliderect(base.rect):
+                #     self.x = old_x      # Collision! Snap back to checkpoint
+                #     self.y = old_y      # Collision! Snap back to checkpoint
+                #     self.update_rect()  # Sync hitbox back immediately
 
                 # 2. Angular Animation Logic: Get the angle in radians (-pi to pi)
                 self.move_direction = manage.get_angle(dx, dy)
@@ -336,15 +352,17 @@ class Zombie(Entity):
 
 class Bullet(Entity):
     """💥 BALLISTIC PROJECTILE LOGIC"""
-    def __init__(self, x, y, dir_x, dir_y, speed=50, max_dist=800):
+    def __init__(self, x, y, dir_x, dir_y, speed=50, max_dist=400):
         super().__init__(x, y, width=6, height=6)
         self.dir_x = dir_x  # Pre-calculated normalized direction trajectory x
         self.dir_y = dir_y  # Pre-calculated normalized direction trajectory y
+        
+        self.traveled = 0
         self.speed = speed
         self.max_dist = max_dist
-        self.damage = random.randint(120, 180)
+        self.damage = random.randint(40, 80)
+        
         self.ID = self.set_bullet_id()
-        self.traveled = 0
         
     def set_bullet_id(self):
         global BULLET_ID
@@ -359,6 +377,36 @@ class Bullet(Entity):
         self.traveled += self.speed
         return self.traveled >= self.max_dist
 
+class DeadBullet(Entity):
+    def __init__(self, x, y):
+        super().__init__(x, y, width=10, height=10)
+        
+        # Add random "kick" from the barrel
+        self.vx = random.uniform(-1, 3)
+        self.vy = random.uniform(-3, 2)
+        
+        # Physics
+        self.gravity = 0.5
+        self.lifetime = 15
+        
+        self.image = assets.sprites["empty_bullets"][random.randrange(0, len(assets.sprites["empty_bullets"]) - 1)]
+        self.rect = pygame.Rect(x, y, 10, 10)
+        
+    def update(self):
+        # Apply physics
+        if self.lifetime > 0:
+            self.vy += self.gravity
+            self.x += self.vx
+            self.y += self.vy
+
+        self.lifetime -= 1
+        self.update_rect()
+        return self.lifetime > 0
+        
+    def update_rect(self):
+        self.rect.x = self.x + 10
+        self.rect.y = self.y + 10
+        
 class Tree(Entity):
     """🌲 MAP OBSTACLE / STATIC SCRAPERS"""
     def __init__(self, x, y, image):

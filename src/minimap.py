@@ -1,5 +1,6 @@
+# minimap.py
 import pygame
-from src.settings import WORLD_HEIGHT, WORLD_WIDTH
+from src.settings import WORLD_WIDTH
 
 
 class Minimap:
@@ -16,7 +17,7 @@ class Minimap:
         # Create a static background box surface with a dark alpha blend
         self.surface = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
         
-    def draw(self, main_screen, player, zombies, trees, camera_x, camera_y, screen_width, screen_height):
+    def draw(self, main_screen, base, player, zombies, trees, camera_x, camera_y, screen_width, screen_height):
         # 1. Clear the minimap canvas surface with a semi-transparent dark gray
         self.surface.fill((30, 30, 30, 200)) 
         
@@ -50,6 +51,13 @@ class Minimap:
         cam_w = int(screen_width * self.scale)
         cam_h = int(screen_height * self.scale)
         pygame.draw.rect(self.surface, (255, 255, 255), (cam_x, cam_y, cam_w, cam_h), 1)
+        
+        bx = int(base.x * self.scale)
+        by = int(base.y * self.scale)
+        bw = int(base.width * self.scale)
+        bh = int(base.height * self.scale)
+        if 0 <= bx < self.size and 0 <= by < self.size:
+            pygame.draw.rect(self.surface, (50, 200, 50), (bx, by, bw, bh), 2)
 
         # 3. Final Output Blit: Stamp the compiled map directly onto the viewport window screen layer
         main_screen.blit(self.surface, (self.margin, self.margin))
