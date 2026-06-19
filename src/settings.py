@@ -26,7 +26,7 @@ PLAYER_START_POINT = WORLD_WIDTH // 2  # Drop zone right in the center of the ma
 
 # 🎨 Apocalypse Palette (RGB Triplets)
 BLACK = (0, 0, 0)
-ZOMBIED = (77, 63, 62)
+ZOMBIED = "#9d7d54"
 GREEN_BG = (34, 68, 34)  # Overgrown forest grass tone
 YELLOW = (255, 255, 0)    # Tracer bullet color
 

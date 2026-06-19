@@ -94,7 +94,7 @@ def load_all_assets():
     blood_png                   = image_load("assets/blood/blood.png")
     
     # Safe Zone Area Dependences
-    base_png                    = image_load("assets/building/safe_zone.png")
+    base_png                    = image_load("assets/building/SafeZone_1.png")
     
     # Components
     empty_bullets_png                    = image_load("assets/components/empty_bullets.png")
@@ -175,7 +175,7 @@ def load_all_assets():
     # ==============================================================================
     
     # sprites["base"] = []
-    sprites["base"] = base_png.subsurface((0, 0, base_png.get_width(), base_png.get_height()))
+    sprites["base"] = pygame.transform.scale(base_png.subsurface((0, 0, base_png.get_width(), base_png.get_height())), (base_png.get_width() - 300, base_png.get_height() - 300))
     
     # ==============================================================================
     # 🖋️ 7. ALL ZOMBIE HEALTH BAR CASES

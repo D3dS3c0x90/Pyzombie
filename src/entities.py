@@ -99,7 +99,7 @@ class Player(Entity):
             self.weapon_ammo_count -= amount_to_load
             manage.play_sound_randomly("reload")
 
-    def move(self, keys, trees, base):
+    def move(self, keys, base, trees=[]):
         old_x, old_y = self.x, self.y
         dx, dy = 0, 0
 
@@ -127,10 +127,10 @@ class Player(Entity):
             self.y = old_y
             
         if self.rect.colliderect(base.door_rect_in):
-            self.y -= 250
+            self.y -= 425
             
         if self.rect.colliderect(base.door_rect_out):
-            self.y += 250
+            self.y += 425
 
         # --- STEP 3: Boundary Constraints ---
         self.x = max(0, min(WORLD_WIDTH - self.width, self.x))
@@ -352,7 +352,7 @@ class Zombie(Entity):
 
 class Bullet(Entity):
     """💥 BALLISTIC PROJECTILE LOGIC"""
-    def __init__(self, x, y, dir_x, dir_y, speed=50, max_dist=400):
+    def __init__(self, x, y, dir_x, dir_y, speed=50, max_dist=600):
         super().__init__(x, y, width=6, height=6)
         self.dir_x = dir_x  # Pre-calculated normalized direction trajectory x
         self.dir_y = dir_y  # Pre-calculated normalized direction trajectory y

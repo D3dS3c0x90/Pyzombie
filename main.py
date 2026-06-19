@@ -37,7 +37,7 @@ class GameEngine:
         pygame.mixer.music.play(loops=0)
         
         self.minimap  = minimap.Minimap()
-        self.safezone = safe_zone.SafeZone(1000, 2500, assets.sprites["base"].get_width(), assets.sprites["base"].get_height(), image=assets.sprites["base"])
+        self.safezone = safe_zone.SafeZone(700, 2500, assets.sprites["base"].get_width(), assets.sprites["base"].get_height(), image=assets.sprites["base"])
         
         # Crosshairs
         self.crosshair = assets.sprites["crosshair"]
@@ -58,13 +58,13 @@ class GameEngine:
         ]
         
         # 🌲 SPAWN MAP ENVIROMENT COLLIDERS
-        self.trees = [
-            entity.Tree(
-                random.randint(0, WORLD_WIDTH - assets.sprites["tree_1"].get_width()), 
-                random.randint(0, WORLD_HEIGHT - assets.sprites["tree_1"].get_height()),  
-                assets.sprites["tree_1"]) 
-            for _ in range(50)
-        ]
+        self.trees = []
+        #     entity.Tree(
+        #         random.randint(0, WORLD_WIDTH - assets.sprites["tree_1"].get_width()), 
+        #         random.randint(0, WORLD_HEIGHT - assets.sprites["tree_1"].get_height()),  
+        #         assets.sprites["tree_1"]) 
+        #     for _ in range(50)
+        # ]
         
         self.bullets               = []
         self.empty_bullets         = []
@@ -165,7 +165,7 @@ class GameEngine:
         self.mx, self.my = pygame.mouse.get_pos()
         
         # Process survivor inputs
-        self.player.move(keys, self.trees, self.safezone)
+        self.player.move(keys, trees=self.trees, base=self.safezone)
         self.player.reload(keys, mouse)
         
         # Compute active state machine animations dynamically
@@ -174,7 +174,7 @@ class GameEngine:
             
         # Route pathfinding instructions for the horde tracking loops
         for zombie in self.zombies:
-            zombie.update_ai(self.player, self.safezone, self.zombies, self.trees)
+            zombie.update_ai(self.player, self.safezone, self.zombies, trees=self.trees)
             if manage.player_zombie_collision(self.player, zombie):
                 self.player_indicators.append(
                     notification.DamageNumber(
@@ -263,11 +263,11 @@ class GameEngine:
                 bullet.traveled = 800
             
             # Bullet - Trees Collision
-            decision = manage.bullet_tree_collision(bullet, self.trees)
-            if decision["bullet_die"]:
-                bullet.traveled = 800
-                if bullet in self.bullets: 
-                    self.bullets.remove(bullet)
+            # decision = manage.bullet_tree_collision(bullet, self.trees)
+            # if decision["bullet_die"]:
+            #     bullet.traveled = 800
+            #     if bullet in self.bullets: 
+            #         self.bullets.remove(bullet)
                     
         for indicator in self.damage_indicators[:]:
             if indicator.update():
@@ -313,12 +313,12 @@ class GameEngine:
         rect_w = self.safezone.rect_w.move(-self.camera_x, -self.camera_y)
         rect_n = self.safezone.rect_n.move(-self.camera_x, -self.camera_y)
         
-        pygame.draw.rect(self.screen, (255, 0, 0), (self.safezone.rect.x - self.camera_x - 10, self.safezone.rect.y - self.camera_y - 10, self.safezone.rect.width + 20, self.safezone.rect.height + 20), 2)
-        pygame.draw.rect(self.screen, (0, 0, 50), door_rect_in, 2)
-        pygame.draw.rect(self.screen, (0, 0, 255), door_rect_out, 2)
-        pygame.draw.rect(self.screen, (0, 130, 0), rect_e, 2)
-        pygame.draw.rect(self.screen, (150, 10, 70), rect_w, 2)
-        pygame.draw.rect(self.screen, (0, 240, 0), rect_n, 2)
+        # pygame.draw.rect(self.screen, (255, 0, 0), (self.safezone.rect.x - self.camera_x - 10, self.safezone.rect.y - self.camera_y - 10, self.safezone.rect.width + 20, self.safezone.rect.height + 20), 2)
+        # pygame.draw.rect(self.screen, (0, 0, 50), door_rect_in, 2)
+        # pygame.draw.rect(self.screen, (0, 0, 255), door_rect_out, 2)
+        # pygame.draw.rect(self.screen, (0, 130, 0), rect_e, 2)
+        # pygame.draw.rect(self.screen, (150, 10, 70), rect_w, 2)
+        # pygame.draw.rect(self.screen, (0, 240, 0), rect_n, 2)
 
         # 1. DRAW OPPOSITION ENEMY GROUPS
         for zombie in self.zombies: 
@@ -364,8 +364,8 @@ class GameEngine:
         self.screen.blit(player_img, (p_draw_x, p_draw_y))
                 
         # 4. DRAW ENVIRONMENT SCENERY (Y-sorted layer offset)     
-        for tree in self.trees:
-            self.screen.blit(tree.image, (tree.x - self.camera_x, (tree.y - self.camera_y) + 100))
+        # for tree in self.trees:
+        #     self.screen.blit(tree.image, (tree.x - self.camera_x, (tree.y - self.camera_y) + 100))
 
         # ==============================================================================
         # 🛠️ DEBUG HITBOX OVERLAY LAYER 
