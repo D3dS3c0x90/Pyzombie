@@ -160,6 +160,9 @@ def load_audio_assets():
     sounds["background"] = _load_sound_folder("assets/sounds/background", volume=0.8)
 
     musics["background"] = [str(p) for p in get_path_files("assets/waves/horror")]
+    
+def load_chars_assets():
+    sprites["E"] = pygame.transform.scale(image_load("assets/chars/E.png").subsurface((0, 0, 32, 32)), (32, 32))
 
 
 def load_all_assets():
@@ -175,3 +178,4 @@ def load_all_assets():
     load_scenery_assets()
     load_misc_assets()
     load_audio_assets()
+    load_chars_assets()

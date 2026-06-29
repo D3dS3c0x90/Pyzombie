@@ -6,6 +6,7 @@
 مع بعضها بسطر واحد بدل for loop كامل.
 """
 import pygame
+import src.assets_manager as assets
 
 
 def bullet_zombies_collision(bullets_group, zombies_group, player):
@@ -27,8 +28,8 @@ def bullet_zombies_collision(bullets_group, zombies_group, player):
                 "zombie": zombie,
                 "zombie_died": zombie_died,
             })
-            bullet.traveled = bullet.max_dist  # علّمه إنه خلص مداه
-            break  # رصاصة واحدة بتضرب زومبي واحد بس، زي السلوك الأصلي
+            bullet.traveled = bullet.max_dist  
+            break 
 
     return events
 
@@ -99,3 +100,37 @@ def bullet_tree_collision(bullets_group, trees_group):
     hit_bullets = list(pygame.sprite.groupcollide(bullets_group, trees_group, True, False).keys())
     return hit_bullets
 
+def player_enteract(player, collision_rect, col_type, screen, keys):
+    for col in collision_rect:
+        if player.rect.colliderect(col):
+            if col_type == "Store":
+                # buy_health(player)
+                # player.pay(25)
+                return (True, "Store")
+            elif col_type == "Dealler":
+                return (True, "Dealler")
+    return (False, None)
+   
+def player_enter_exit(player, door_rect_in, door_rect_out, notifications_list, alert_list=[], keys=None, amount=0, delay=None):
+    pressed_key = keys[pygame.K_e]
+    delay.pressed = False if delay.delay() else delay.pressed
+    if player.rect.colliderect(door_rect_in):
+        notifications_list.append([player.check_in_gate_notification(amount)])
+        if pressed_key:
+            pay_dessision = player.pay(amount)
+            if pay_dessision:
+                player.x += 350
+            else:
+                if delay.pressed == False:
+                    alert_list.append(player.player_alert("Insufficient", assets.sprites["coins_2"]))
+                    delay.pressed = True
+
+    if player.rect.colliderect(door_rect_out):
+        notifications_list.append([player.check_out_gate_notification()])
+        if pressed_key:
+            player.x -= 350 
+        
+    player.update_rect()
+    
+def buy_health(player):
+    player.health_system(health=25)

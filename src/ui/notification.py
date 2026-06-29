@@ -1,5 +1,6 @@
 # src/ui/notification.py
 import pygame
+import src.settings as settings
 
 
 class TextMessage:
@@ -64,3 +65,46 @@ class DamageNumber(TextMessage):
 class Notification(TextMessage):
     def __init__(self, text, image, color=(255, 255, 255)):
         super().__init__(text=text, amount="", image=image, color=color, lifetime=90, speed=1)
+
+class FixedNotification:
+    def __init__(self, text="", amount="", color=(255, 255, 255), image=None):
+        self.text = text
+        self.amount = str(amount)
+        self.color = color
+        self.image = image
+
+        self.y = 0
+
+        self.font = pygame.font.Font(settings.PIXEL_FONT, 24)
+    
+    def show_text(self, surface, target_x, target_y, flip=None):
+        # self.font.set_bold(True)
+        display_string = f"{self.text} {self.amount}".strip()
+        text_surface = self.font.render(display_string, True, self.color)
+        
+        spacing = 8
+        total_width = text_surface.get_width() + (self.image.get_width() + spacing if self.image else 0)
+        total_height = max(text_surface.get_height(), self.image.get_height() if self.image else 0)
+
+        combined_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
+        
+        if flip and self.image:
+            img_y_offset = (total_height - self.image.get_height()) // 2
+            combined_surface.blit(self.image, (0, img_y_offset))
+
+            text_x = self.image.get_width() + spacing
+            text_y_offset = ((total_height - text_surface.get_height()) // 2) - 6
+            combined_surface.blit(text_surface, (text_x, text_y_offset))
+        else:
+            text_y_offset = (total_height - text_surface.get_height()) // 2
+            combined_surface.blit(text_surface, (0, text_y_offset))
+
+            if self.image:
+                img_x = text_surface.get_width() + spacing
+                img_y_offset = ((total_height - text_surface.get_height()) // 2) - 6
+                combined_surface.blit(self.image, (img_x, img_y_offset))
+
+        # Calculate final position and blit once
+        start_x = target_x - (total_width // 2) + 20
+        start_y = target_y + self.y - 10
+        surface.blit(combined_surface, (start_x, start_y))

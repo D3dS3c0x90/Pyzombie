@@ -18,10 +18,11 @@ from src.ui import minimap as minimap_module
 from src.ui import notification
 from src.ui import player_state as player_state_module
 from src.world.safe_zone import SafeZone
+import src.core.clock as clock_and_time
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT,
-    FPS, ZOMBIED, MUSIC_ENDED_EVENT,
-)
+    FPS, ZOMBIED, MUSIC_ENDED_EVENT, WALLS, BUILDINGS, COUNTER
+    )
 
 
 class GameEngine:
@@ -47,9 +48,6 @@ class GameEngine:
         self.world_width = self.tiled_map.width
         self.world_height = self.tiled_map.height
 
-        # ==========================================================
-        # 🧺 SPRITE GROUPS (بدل الـ plain lists القديمة)
-        # ==========================================================
         self.all_sprites = pygame.sprite.Group()
         self.zombies_group = pygame.sprite.Group()
         self.bullets_group = pygame.sprite.Group()
@@ -59,17 +57,20 @@ class GameEngine:
 
         self.minimap = minimap_module.Minimap()
         self.safezone = SafeZone(
-            self.world_width - assets.sprites["base"].get_width(), 0,
+            self.world_width - assets.sprites["base"].get_width() - 25, 0,
             assets.sprites["base"].get_width(), assets.sprites["base"].get_height(),
             image=assets.sprites["base"],
         )
         
         spawn.spawn_trees_from_map(self.tiled_map, self.trees_group)
+        spawn.spawn_walls_collision(self.tiled_map)
+        spawn.spawn_store_collision(self.tiled_map)
+        spawn.spawn_dealler_collision(self.tiled_map)
 
         self.crosshair = assets.sprites["crosshair"]
         pygame.mouse.set_visible(False)
 
-        self.player = Player(WORLD_WIDTH // 2, WORLD_HEIGHT // 2, assets.animations, self.all_sprites)
+        self.player = Player(WORLD_WIDTH - 300, 300, assets.animations, self.all_sprites)
 
         for _ in range(5):
             Zombie(
@@ -80,15 +81,9 @@ class GameEngine:
                 self.all_sprites, self.zombies_group,
             )
 
-        # for _ in range(50):
-        #     Tree(
-        #         random.randint(0, WORLD_WIDTH - assets.sprites["tree_1"].get_width()),
-        #         random.randint(0, WORLD_HEIGHT - assets.sprites["tree_1"].get_height()),
-        #         assets.sprites["tree_1"], self.all_sprites, self.trees_group,
-        #     )
-
         self.damage_indicators = []
         self.notifications = []
+        self.fixed_notifications = []
         self.player_indicators = []
         self.blood = []
 
@@ -98,6 +93,7 @@ class GameEngine:
 
         self.mx, self.my = 0, 0
         self.running = True
+        self.secound = clock_and_time.Timer(1, FPS)
 
     def _play_random_background_music(self):
         music_track = combat.get_music_randomly("background", assets.musics)
@@ -105,6 +101,7 @@ class GameEngine:
         pygame.mixer.music.play(loops=0)
 
     def run(self):
+        global COUNTER
         while self.running:
             self.handle_events()
             self.update_game_states()
@@ -173,7 +170,23 @@ class GameEngine:
         self._update_items()
         self._update_floating_texts()
         self._maybe_spawn_zombie()
+        
+        self.fixed_notifications = []
+        for _, (col_type, collision) in enumerate(BUILDINGS.items()):
+            collision_hit = collisions.player_enteract(self.player, collision, col_type, self.screen, keys)
+            if collision_hit[0]:
+                self.fixed_notifications.append([notification.FixedNotification(text=f"For {col_type} Press ", image=assets.sprites["E"]), collision_hit[1]])
 
+        collisions.player_enter_exit(
+            self.player, 
+            self.safezone.door_rect_in, 
+            self.safezone.door_rect_out, 
+            self.fixed_notifications, 
+            alert_list=self.notifications, 
+            keys=keys, 
+            amount=200,
+            delay=self.secound
+            )
         self.camera.update(self.player.x, self.player.y)
 
     def _update_zombies(self):
@@ -277,6 +290,9 @@ class GameEngine:
         cam_x, cam_y = self.camera.x, self.camera.y
         
         self.tiled_map.draw(self.screen, cam_x, cam_y)
+        self.safezone.draw(self.screen, cam_x, cam_y)        
+
+
         for zombie in self.zombies_group:
             if zombie.is_dead:
                 img = zombie.get_current_image(flag="die")
@@ -316,28 +332,21 @@ class GameEngine:
         # rect_draw_x = self.player.rect.x - cam_x
         # rect_draw_y = self.player.rect.y - cam_y
         
+        # erect_draw_x = self.player.enteract_rect.x - cam_x
+        # erect_draw_y = self.player.enteract_rect.y - cam_y
+        
         # pygame.draw.rect(self.screen, (255,0,0), (rect_draw_x, rect_draw_y, self.player.rect.width, self.player.rect.height), 2)
+        # pygame.draw.rect(self.screen, (255,100,0), (erect_draw_x, erect_draw_y, self.player.enteract_rect.width, self.player.enteract_rect.height), 2)
 
-        self.safezone.draw(self.screen, cam_x, cam_y)
-        
-        
-        
-        front_tree = []
-
+        self.screen.blit(player_img, (p_draw_x, p_draw_y))
         for tree in self.trees_group:
-            # rect_draw_x = tree.rect.x - cam_x
-            # rect_draw_y = tree.rect.y - cam_y
             if self.player.rect.colliderect(tree.opposite_rect):
                 self.screen.blit(tree.image, (tree.x - cam_x, tree.y - cam_y))
+                self.screen.blit(player_img, (p_draw_x, p_draw_y))
             else:
-                front_tree.append(tree)
-            # pygame.draw.rect(self.screen, (255,0,0), (rect_draw_x, rect_draw_y, tree.rect.width, tree.rect.height), 2)
+                self.screen.blit(tree.image, (tree.x - cam_x, tree.y - cam_y))
+
             pygame.draw.rect(self.screen, (55,0,0), (tree.opposite_rect.x - cam_x, tree.opposite_rect.y - cam_y, tree.opposite_rect.width, tree.opposite_rect.height), 2)
-                
-        self.screen.blit(player_img, (p_draw_x, p_draw_y))
-        
-        for tree in front_tree:
-            self.screen.blit(tree.image, (tree.x - cam_x, tree.y - cam_y))
 
         for indicator in self.damage_indicators:
             indicator.draw(self.screen, indicator.world_x - cam_x, indicator.world_y - cam_y)
@@ -345,12 +354,32 @@ class GameEngine:
             indicator.draw(self.screen, indicator.world_x - cam_x, indicator.world_y - cam_y)
         for notify in self.notifications:
             notify.draw(self.screen, self.player.x - cam_x + self.player.width // 2, self.player.y - cam_y - 20)
-
+        for notify in self.fixed_notifications:
+            notify[0].show_text(self.screen, self.player.x - self.camera.x, self.player.y - self.camera.y, flip=None)
+            
         self.minimap.draw(
             self.screen, self.player, self.zombies_group, self.trees_group,
             cam_x, cam_y, self.screen.get_width(), self.screen.get_height(),
             base=self.safezone
         )
+        
+        # for wall_rect in WALLS:
+        #     draw_x = wall_rect.x - cam_x
+        #     draw_y = wall_rect.y - cam_y
+            
+        #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, wall_rect.width, wall_rect.height), 2)
+            
+        # for store_rect in STORIES:
+        #     draw_x = store_rect.x - cam_x
+        #     draw_y = store_rect.y - cam_y
+
+        #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, store_rect.width, store_rect.height), 2)
+            
+        # for dealler_rect in DEALLER:
+        #     draw_x = dealler_rect.x - cam_x
+        #     draw_y = dealler_rect.y - cam_y
+
+        #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, dealler_rect.width, dealler_rect.height), 2)
 
         player_info = player_state_module.PlayerState(
             self.screen, [0, SCREEN_HEIGHT - 120], [160, SCREEN_HEIGHT - 105], self.player

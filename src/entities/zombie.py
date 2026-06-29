@@ -5,6 +5,7 @@ import pygame
 import src.systems.combat_helpers as combat
 from src.entities.base import Entity
 from src.core.id_generator import id_generator
+from src.settings import WALLS
 
 
 class Zombie(Entity):
@@ -54,7 +55,6 @@ class Zombie(Entity):
                 move_x = (dx / dist) * self.speed
                 move_y = (dy / dist) * self.speed
 
-                # محور X
                 old_x = self.x
                 self.x += move_x
                 self.update_rect()
@@ -63,13 +63,18 @@ class Zombie(Entity):
                         self.x = old_x
                         self.update_rect()
                         break
+                    
+                for wall in WALLS: 
+                    if self.rect.colliderect(wall):
+                        self.x = old_x
+                        self.update_rect()
+                        
                 for tree in trees:
                     if self.rect.colliderect(tree.rect):
                         self.x = old_x
                         self.update_rect()
                         break
 
-                # محور Y
                 old_y = self.y
                 self.y += move_y
                 self.update_rect()
@@ -78,18 +83,24 @@ class Zombie(Entity):
                         self.y = old_y
                         self.update_rect()
                         break
+                    
+                for wall in WALLS: 
+                    if self.rect.colliderect(wall):
+                        self.y = old_y
+                        self.update_rect()
+                        
                 for tree in trees:
                     if self.rect.colliderect(tree.rect):
                         self.y = old_y
                         self.update_rect()
                         break
 
-                # if (self.rect.colliderect(player.rect) or self.rect.colliderect(base.rect)
-                #         or self.rect.colliderect(base.rect_n) or self.rect.colliderect(base.rect_e)
-                #         or self.rect.colliderect(base.rect_w)):
-                #     self.x = old_x
-                #     self.y = old_y
-                #     self.update_rect()
+                if (self.rect.colliderect(player.rect) or self.rect.colliderect(base.rect)
+                        or self.rect.colliderect(base.rect_n) or self.rect.colliderect(base.rect_e)
+                        or self.rect.colliderect(base.rect_w)):
+                    self.x = old_x
+                    self.y = old_y
+                    self.update_rect()
 
                 self.move_direction = combat.get_angle(dx, dy)
                 self.die_direction = self.move_direction

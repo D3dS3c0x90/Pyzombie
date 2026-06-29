@@ -2,7 +2,9 @@
 import pygame
 import src.systems.combat_helpers as combat
 from src.entities.base import Entity
-from src.settings import WORLD_WIDTH, WORLD_HEIGHT
+from src.settings import WORLD_WIDTH, WORLD_HEIGHT, WALLS
+from src.ui import notification
+import src.assets_manager as assets
 
 
 class Player(Entity):
@@ -31,15 +33,21 @@ class Player(Entity):
 
         self.animation_speed = 0.2
         self.fire_animation_speed = 0.6
+        
+        self.enteract_rect = pygame.Rect(self.x, self.y, self.image.get_width(), self.image.get_height())
 
         self.update_rect()
 
     def update_rect(self):
-        """هيتبوكس ضيق عند رجلين الشخصية بدل الصورة كاملة."""
         self.rect.x = self.x + (self.width - 45)
         self.rect.y = self.y + (self.height - 35)
         self.rect.width = 30
         self.rect.height = 30
+        
+        self.enteract_rect.x = self.x - 5
+        self.enteract_rect.y = self.y + 35
+        self.enteract_rect.width = (self.image.get_width() // 2) - 10
+        self.enteract_rect.height = (self.image.get_height() // 2) - 10
 
     def reload(self, keys, mouse):
         if keys[pygame.K_r] or mouse[2]:
@@ -51,10 +59,10 @@ class Player(Entity):
             self.weapon_ammo_count -= amount_to_load
             combat.play_sound_randomly("reload")
 
-    def move(self, keys, base={}, trees=()):
+    def move(self, keys, base=None, trees=()):
         old_x, old_y = self.x, self.y
         dx, dy = 0, 0
-
+        
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
             dx = -self.speed
         if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
@@ -64,30 +72,34 @@ class Player(Entity):
         if keys[pygame.K_s] or keys[pygame.K_DOWN]:
             dy = self.speed
 
-        # --- الحركة الأفقية ---
         self.x += dx
         self.update_rect()
+        
         for tree in trees:
             if self.rect.colliderect(tree.rect):
                 self.x = old_x
+                
+        for wall in WALLS: 
+            if self.rect.colliderect(wall):
+                self.x = old_x
+                self.update_rect()
 
-        # --- الحركة الرأسية ---
         self.y += dy
         self.update_rect()
+        
         for tree in trees:
             if self.rect.colliderect(tree.rect):
                 self.y = old_y
+                
+        for wall in WALLS:
+            if self.rect.colliderect(wall):
+                self.y = old_y
+                self.update_rect()
 
-        # if (self.rect.colliderect(base.rect) or self.rect.colliderect(base.rect_n)
-        #         or self.rect.colliderect(base.rect_e) or self.rect.colliderect(base.rect_w)):
-        #     self.x = old_x
-        #     self.y = old_y
-
-        # if self.rect.colliderect(base.door_rect_in):
-        #     self.y -= 425
-
-        # if self.rect.colliderect(base.door_rect_out):
-        #     self.y += 425
+        if (self.rect.colliderect(base.rect) or self.rect.colliderect(base.rect_n)
+                or self.rect.colliderect(base.rect_e) or self.rect.colliderect(base.rect_w)):
+            self.x = old_x
+            self.y = old_y
 
         self.x = max(0, min(WORLD_WIDTH - self.width, self.x))
         self.y = max(0, min(WORLD_HEIGHT - self.height, self.y))
@@ -156,3 +168,18 @@ class Player(Entity):
     def draw_health_bar(self, screen, x, y):
         import src.assets_manager as assets
         screen.blit(assets.sprites["player_health_bar"][self.get_health_bar_index(11)], (x, y))
+
+    def check_in_gate_notification(self, amount):
+        return notification.FixedNotification(text=f"Wanna Pay {amount} for Enter?", image=assets.sprites["E"])
+        
+    def check_out_gate_notification(self):
+        return notification.FixedNotification(text="Wanna Exit?", image=assets.sprites["E"])
+
+    def player_alert(self, text, image=None):
+        return notification.Notification(text, image)
+
+    def pay(self, amount):
+        if self.coins < amount:
+            return False
+        self.coins -= amount
+        return True

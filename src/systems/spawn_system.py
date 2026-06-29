@@ -2,13 +2,14 @@
 
 import random
 import pytmx
+import pygame
 
 import src.assets_manager as assets
 import src.systems.combat_helpers as combat
 from src.entities.tree import Tree
 from src.entities.zombie import Zombie
 from src.entities.items import Health, Coins, Ammo
-from src.settings import WORLD_WIDTH, WORLD_HEIGHT
+from src.settings import WORLD_WIDTH, WORLD_HEIGHT, WALLS, BUILDINGS
 
 
 def spawn_zombie(zombies_group, all_sprites_group, max_zombies=50):
@@ -59,3 +60,24 @@ def spawn_trees_from_map(tiled_map, trees_group):
         if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "trees":
             for obj in layer:
                 Tree(obj.x, obj.y, assets.sprites["tree_1"], trees_group) 
+
+def spawn_walls_collision(tiled_map):
+    for layer in tiled_map.tmx_data.visible_layers:
+        if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "stop":
+            for obj in layer:
+                wall_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                WALLS.append(wall_rect)
+                
+def spawn_store_collision(tiled_map):
+    for layer in tiled_map.tmx_data.visible_layers:
+        if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "store":
+            for obj in layer:
+                store_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                BUILDINGS["Store"].append(store_rect)
+                
+def spawn_dealler_collision(tiled_map):
+    for layer in tiled_map.tmx_data.visible_layers:
+        if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "dealler":
+            for obj in layer:
+                dealler_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                BUILDINGS["Dealler"].append(dealler_rect)
