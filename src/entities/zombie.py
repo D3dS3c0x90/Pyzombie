@@ -19,6 +19,7 @@ class Zombie(Entity):
         self.die_direction = "down"
 
         self.is_dead = False
+        self.compose_time = 600
 
         self.move_current_frame = 0
         self.die_current_frame = 0

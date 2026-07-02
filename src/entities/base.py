@@ -28,7 +28,6 @@ class Entity(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
 
     def update_rect(self):
-        """تحديث موحّد لموضع الـ hitbox. الـ subclasses بتعمل override لو شكل الهيتبوكس مختلف."""
         self.rect.x = self.x
         self.rect.y = self.y
         self.rect.width = self.width

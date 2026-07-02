@@ -25,10 +25,14 @@ def spawn_zombie(zombies_group, all_sprites_group, max_zombies=50):
     )
     return zombie
 
-def cleanup_oldest_dead_zombie(zombies_group, min_count=10):
+def cleanup_dead_zombie(zombies_group):
     zombies = list(zombies_group)
-    if len(zombies) >= min_count and zombies and zombies[0].is_dead:
-        zombies[0].kill()
+    for zombie in zombies:
+        if zombie.is_dead:
+            if zombie.compose_time == 0:
+                zombie.kill()
+            else:
+                zombie.compose_time -= 1
 
 def maybe_drop_item(zombie, items_group, all_sprites_group, item_counter):
     random_value = combat.get_random_value()

@@ -1,12 +1,8 @@
 # src/systems/collision_system.py
-"""
-⚔️ COLLISION SYSTEM
-دلوقتي بنستخدم pygame.sprite.spritecollide / groupcollide بدل اللوبات اليدوية
-القديمة في central_managment.py. الفرق الأساسي إن الـ Groups بقت "تعرف" تتفاعل
-مع بعضها بسطر واحد بدل for loop كامل.
-"""
+
 import pygame
 import src.assets_manager as assets
+from src.settings import IS_COLLISIONED
 
 
 def bullet_zombies_collision(bullets_group, zombies_group, player):
@@ -111,24 +107,43 @@ def player_enteract(player, collision_rect, col_type, screen, keys):
                 return (True, "Dealler")
     return (False, None)
    
-def player_enter_exit(player, door_rect_in, door_rect_out, notifications_list, alert_list=[], keys=None, amount=0, delay=None):
+def player_enter_exit(player, door_rect_in, door_rect_out, notifications_list, alert_list=[], keys=None, amount=0, delay=None, inventory_timer=None):
+    global IS_COLLISIONED
     pressed_key = keys[pygame.K_e]
-    delay.pressed = False if delay.delay() else delay.pressed
+    # delay.pressed = False if delay.delay() else delay.pressed
     if player.rect.colliderect(door_rect_in):
+        IS_COLLISIONED[0] = True
         notifications_list.append([player.check_in_gate_notification(amount)])
+        delay.delay()
         if pressed_key:
+            if not delay.pressed:
+                delay.pressed = True
             pay_dessision = player.pay(amount)
             if pay_dessision:
                 player.x += 350
+                
+                inventory_timer.pressed = True
+                inventory_timer.delay()
             else:
-                if delay.pressed == False:
+                if not delay.hold:
                     alert_list.append(player.player_alert("Insufficient", assets.sprites["coins_2"]))
-                    delay.pressed = True
+                    # delay.pressed = True
+    else:
+        IS_COLLISIONED[0] = False
 
     if player.rect.colliderect(door_rect_out):
+        IS_COLLISIONED[1] = True
         notifications_list.append([player.check_out_gate_notification()])
+        delay.delay()
         if pressed_key:
-            player.x -= 350 
+            if not delay.pressed:
+                delay.pressed = True
+            player.x -= 350
+            
+            inventory_timer.pressed = True
+            inventory_timer.delay() 
+    else:
+        IS_COLLISIONED[1] = False
         
     player.update_rect()
     

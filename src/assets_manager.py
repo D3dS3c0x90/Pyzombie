@@ -83,6 +83,7 @@ def load_player_assets():
 def load_dropped_item_assets():
 
     dropped_png = image_load("assets/Player/Dropped_Items.png")
+    
     sprites["ammo"] = pygame.transform.scale(dropped_png.subsurface((192, 0, 32, 32)), (30, 30))
     sprites["coins_1"] = pygame.transform.scale(dropped_png.subsurface((64, 0, 32, 32)), (30, 30))
     sprites["coins_2"] = pygame.transform.scale(dropped_png.subsurface((96, 0, 32, 32)), (30, 30))
@@ -108,6 +109,7 @@ def load_zombie_assets():
 def load_scenery_assets():
     # trees_png = image_load("assets/Trees1.png")
     sprites["tree_1"] = pygame.transform.scale(image_load("assets/\decorations/tree_1.png").subsurface((0, 0, 112, 192)), (120, 240))
+    sprites["inventory"] = pygame.transform.scale(image_load("assets/inventory/inventory.png").subsurface((0, 0, 1234, 809)), (1000, 657))
     # sprites["bush_1"] = pygame.transform.scale(trees_png.subsurface((185, 75, 50, 50)), (80, 80))
     # sprites["bush_2"] = pygame.transform.scale(trees_png.subsurface((190, 130, 40, 40)), (80, 80))
 
@@ -144,7 +146,6 @@ def _load_sound_folder(path, volume=None):
 
 
 def load_audio_assets():
-    """🔊 كل المؤثرات الصوتية والموسيقى"""
     sounds["no_ammo"] = [pygame.mixer.Sound("assets/sounds/no_ammo/no_ammo.ogg")]
     sounds["ammo"] = [pygame.mixer.Sound("assets/sounds/weapon/collect.ogg")]
 
@@ -152,26 +153,20 @@ def load_audio_assets():
     health_sound.set_volume(0.3)
     sounds["health"] = [health_sound]
 
-    sounds["move"] = _load_sound_folder("assets/sounds/footsteps", volume=0.2)
+    sounds["move"] = _load_sound_folder("assets/sounds/footsteps", volume=0.1)
     sounds["coins"] = _load_sound_folder("assets/sounds/coins", volume=0.2)
     sounds["fire"] = _load_sound_folder("assets/sounds/firing/rifle", volume=0.3)
     sounds["reload"] = _load_sound_folder("assets/sounds/reload", volume=0.3)
     sounds["dead_bullets"] = _load_sound_folder("assets/sounds/dead_bullet", volume=0.8)
-    sounds["background"] = _load_sound_folder("assets/sounds/background", volume=0.8)
+    sounds["background"] = _load_sound_folder("assets/sounds/background", volume=0.3)
 
     musics["background"] = [str(p) for p in get_path_files("assets/waves/horror")]
     
 def load_chars_assets():
     sprites["E"] = pygame.transform.scale(image_load("assets/chars/E.png").subsurface((0, 0, 32, 32)), (32, 32))
 
-
 def load_all_assets():
-    """
-    🚚 ASSET PIPELINE INITIALIZATION
-    بيتنده مرة واحدة بس في بداية اللعبة. كل نوع أصول بقى في فنكشن منفصلة
-    عشان لو حبيت تضيف entity جديد (مثلاً NPC) تضيف load_npc_assets() بس
-    من غير ما تلمس باقي الفنكشنز.
-    """
+
     load_player_assets()
     load_dropped_item_assets()
     load_zombie_assets()

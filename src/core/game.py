@@ -16,14 +16,45 @@ from src.entities.zombie import Zombie
 from src.entities.bullet import Bullet, DeadBullet
 from src.ui import minimap as minimap_module
 from src.ui import notification
+from src.ui import inventory
 from src.ui import player_state as player_state_module
 from src.world.safe_zone import SafeZone
 import src.core.clock as clock_and_time
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT,
-    FPS, ZOMBIED, MUSIC_ENDED_EVENT, WALLS, BUILDINGS, COUNTER
+    FPS, ZOMBIED, MUSIC_ENDED_EVENT, IS_INVENTORY_OPEN, BUILDINGS, IS_COLLISIONED, ITEMS
     )
 
+def _init_items():
+    global ITEMS
+    ITEMS = {
+        "Health" : {
+            "health_1":{"name" : "Small Health", "amount" : 10, "image" : assets.sprites["health_1"]},
+            "health_2":{"name" : "Normal Health", "amount" : 20, "image" : assets.sprites["health_2"]},
+            # {"name" : "health_3", "amount" : 35, "image" : sprites[""]},
+            # {"name" : "health_4", "amount" : 50, "image" : sprites[""]},
+            # {"name" : "health_5", "amount" : 80, "image" : sprites[""]},
+            },
+        # "Consumable" : [
+        #     {"name" : "water_1", "amount" : 10, "image" : sprites[""]},
+        #     {"name" : "water_2", "amount" : 20, "image" : sprites[""]},
+        #     {"name" : "water_3", "amount" : 35, "image" : sprites[""]},
+            
+        #     {"name" : "food_1", "amount" : 10, "image" : sprites[""]},
+        #     {"name" : "food_2", "amount" : 20, "image" : sprites[""]},
+        #     {"name" : "food_3", "amount" : 35, "image" : sprites[""]},
+        # ], 
+        "Ammo" : {
+            "rifle_ammo_1":{"name" : "5.56×45mm", "amount" : 10, "image" : assets.sprites["ammo"]},
+            # {"name" : "5.56×45mm", "amount" : 20, "image" : sprites[""]},
+            # {"name" : "5.56×45mm", "amount" : 35, "image" : sprites[""]},
+            
+            # {"name" : "semi_ammo_1", "amount" : 40, "image" : sprites[""]},
+            # {"name" : "semi_ammo_2", "amount" : 70, "image" : sprites[""]},
+            # {"name" : "semi_ammo_3", "amount" : 100, "image" : sprites[""]},
+            },
+        
+    }
 
 class GameEngine:
     """
@@ -42,6 +73,7 @@ class GameEngine:
 
         pygame.mixer.music.set_endevent(MUSIC_ENDED_EVENT)
         self._play_random_background_music()
+        _init_items()
         
         self.tiled_map = TiledMap("assets/maps/main.tmx")
 
@@ -49,11 +81,15 @@ class GameEngine:
         self.world_height = self.tiled_map.height
 
         self.all_sprites = pygame.sprite.Group()
+        
         self.zombies_group = pygame.sprite.Group()
-        self.bullets_group = pygame.sprite.Group()
-        self.items_group = pygame.sprite.Group()
         self.trees_group = pygame.sprite.Group()
+        
+        self.items_group = pygame.sprite.Group()
+        self.bullets_group = pygame.sprite.Group()
         self.dead_bullets_group = pygame.sprite.Group()
+        
+        self.inventory_items_group = pygame.sprite.Group()
 
         self.minimap = minimap_module.Minimap()
         self.safezone = SafeZone(
@@ -80,6 +116,19 @@ class GameEngine:
                 assets.animations["zombie_die"],
                 self.all_sprites, self.zombies_group,
             )
+        
+        self.inventory_start_x = (SCREEN_WIDTH - assets.sprites["inventory"].get_width()) // 2
+        self.inventory_start_y = (SCREEN_HEIGHT - assets.sprites["inventory"].get_height() - 100) // 2
+            
+        self.item_start_x = self.inventory_start_x + 180   
+        self.item_start_y = self.inventory_start_y + 75 
+        
+        self.inventory = inventory.Inventory(
+            self.inventory_start_x,
+            self.inventory_start_y,
+            assets.sprites["inventory"].get_width(), assets.sprites["inventory"].get_height(), 
+            assets.sprites["inventory"], []
+            )
 
         self.damage_indicators = []
         self.notifications = []
@@ -93,15 +142,28 @@ class GameEngine:
 
         self.mx, self.my = 0, 0
         self.running = True
-        self.secound = clock_and_time.Timer(1, FPS)
+        
+        self.delay = clock_and_time.Timer(0.25, FPS)
+        self.inventory_timer = clock_and_time.Timer(0.2, FPS)
+        
+        self.init_items()
 
     def _play_random_background_music(self):
         music_track = combat.get_music_randomly("background", assets.musics)
+        pygame.mixer.music.set_volume(0.3)
         pygame.mixer.music.load(music_track)
         pygame.mixer.music.play(loops=0)
-
+        
+    def init_items(self):
+        health = ITEMS["Health"]["health_1"]
+        health_item = inventory.Item(self.item_start_x, self.item_start_y, health, "Health", self.inventory_items_group)
+        health_item.inc(3)
+        
+        ammo = ITEMS["Ammo"]["rifle_ammo_1"]
+        ammo_item = inventory.Item(self.item_start_x, self.item_start_y, ammo, "Ammo", self.inventory_items_group)
+        ammo_item.inc(2)
+        
     def run(self):
-        global COUNTER
         while self.running:
             self.handle_events()
             self.update_game_states()
@@ -125,6 +187,8 @@ class GameEngine:
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self._try_fire()
+                
+            self.inventory.drop_down_list(event)
 
     def _try_fire(self):
         if self.player.ammo_count <= 0:
@@ -153,12 +217,23 @@ class GameEngine:
     # 🔄 UPDATE
     # ==========================================================
     def update_game_states(self):
+        global IS_INVENTORY_OPEN, IS_COLLISIONED
         keys = pygame.key.get_pressed()
         mouse = pygame.mouse.get_pressed()
         self.mx, self.my = pygame.mouse.get_pos()
+        
+        # self.timer.limit = 10
+        if not self.inventory_timer.hold:
+            if keys[pygame.K_e]:
+                if IS_INVENTORY_OPEN:
+                    IS_INVENTORY_OPEN = False
+                elif not IS_INVENTORY_OPEN and True not in IS_COLLISIONED:
+                    IS_INVENTORY_OPEN = True
+                if True not in IS_COLLISIONED:
+                    self.inventory_timer.pressed = True
+        self.inventory_timer.delay()
 
         self.player.move(keys, trees=self.trees_group, base=self.safezone)
-        # self.player.move(keys, trees=self.trees_group)
         self.player.reload(keys, mouse)
 
         current_state = self.player.determine_action_state()
@@ -185,7 +260,8 @@ class GameEngine:
             alert_list=self.notifications, 
             keys=keys, 
             amount=200,
-            delay=self.secound
+            delay=self.delay,
+            inventory_timer=self.inventory_timer 
             )
         self.camera.update(self.player.x, self.player.y)
 
@@ -277,10 +353,10 @@ class GameEngine:
     def _maybe_spawn_zombie(self):
         if self.global_counter % (FPS * int(combat.get_random_value() * 0.5) + 1) == 0:
             spawn.spawn_zombie(self.zombies_group, self.all_sprites)
-            spawn.cleanup_oldest_dead_zombie(self.zombies_group)
             self.global_counter = 1
         else:
             self.global_counter += 1
+        spawn.cleanup_dead_zombie(self.zombies_group)
 
     # ==========================================================
     # 🖼️ RENDER
@@ -308,7 +384,8 @@ class GameEngine:
             if zombie.is_dead == False:
                 img = zombie.get_current_image()
                 self.screen.blit(img, (zombie.x - cam_x, zombie.y - cam_y + zombie.height // 2))
-                zombie.draw_health_bar(self.screen, zombie.x - cam_x - 10, zombie.y - cam_y + zombie.height // 2 - 2)
+                if zombie.health != zombie.health_limit:
+                    zombie.draw_health_bar(self.screen, zombie.x - cam_x - 10, zombie.y - cam_y + zombie.height // 2 - 2)
                 
                 # rect_draw_x = zombie.rect.x - cam_x
                 # rect_draw_y = zombie.rect.y - cam_y
@@ -380,6 +457,12 @@ class GameEngine:
         #     draw_y = dealler_rect.y - cam_y
 
         #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, dealler_rect.width, dealler_rect.height), 2)
+        
+        if IS_INVENTORY_OPEN:
+            self.inventory.items = self.inventory_items_group
+            self.inventory.draw(
+                screen=self.screen,
+            )   
 
         player_info = player_state_module.PlayerState(
             self.screen, [0, SCREEN_HEIGHT - 120], [160, SCREEN_HEIGHT - 105], self.player
