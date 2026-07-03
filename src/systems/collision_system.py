@@ -83,7 +83,7 @@ def zombie_zombie_collision(zombie, zombies_group):
 
 def player_item_collision(item, player):
     if item.rect.colliderect(player.rect):
-        item.is_taked = True
+        item.is_taken = True
         if item.type in ["RifleAmmo", "Auto"]:
             player.weapon_ammo_count += item.amount
         elif item.type == "Health":
@@ -92,19 +92,19 @@ def player_item_collision(item, player):
     return False
 
 def bullet_tree_collision(bullets_group, trees_group):
-    """بيقتل (kill) أي رصاصة اتصدمت بشجرة ويرجع اللستة اللي اتقتلت."""
+    """Kill any bullet that collides with a tree and return the hit list."""
     hit_bullets = list(pygame.sprite.groupcollide(bullets_group, trees_group, True, False).keys())
     return hit_bullets
 
-def player_enteract(player, collision_rect, col_type, screen, keys):
+def player_interact(player, collision_rect, col_type, screen, keys):
     for col in collision_rect:
         if player.rect.colliderect(col):
             if col_type == "Store":
                 # buy_health(player)
                 # player.pay(25)
                 return (True, "Store")
-            elif col_type == "Dealler":
-                return (True, "Dealler")
+            elif col_type == "Dealer":
+                return (True, "Dealer")
     return (False, None)
    
 def player_enter_exit(player, door_rect_in, door_rect_out, notifications_list, alert_list=[], keys=None, amount=0, delay=None, inventory_timer=None):
@@ -118,15 +118,15 @@ def player_enter_exit(player, door_rect_in, door_rect_out, notifications_list, a
         if pressed_key:
             if not delay.pressed:
                 delay.pressed = True
-            pay_dessision = player.pay(amount)
-            if pay_dessision:
+            pay_decision = player.pay(amount)
+            if pay_decision:
                 player.x += 350
                 
                 inventory_timer.pressed = True
                 inventory_timer.delay()
             else:
                 if not delay.hold:
-                    alert_list.append(player.player_alert("Insufficient", assets.sprites["coins_2"]))
+                    alert_list.append(player.player_alert("Insufficient funds", assets.sprites["coins_2"]))
                     # delay.pressed = True
     else:
         IS_COLLISIONED[0] = False

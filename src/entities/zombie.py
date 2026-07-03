@@ -46,7 +46,7 @@ class Zombie(Entity):
         self.damage_rect.y = self.y + 20
 
     def update_ai(self, player, base={}, items=(), trees=()):
-        """🎯 ملاحقة 8 اتجاهات بناء على trigonometry."""
+        """8-direction chasing behaviour using trigonometry."""
         if not self.is_dead:
             dx = player.x - self.x
             dy = player.y - self.y

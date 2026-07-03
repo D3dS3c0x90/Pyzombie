@@ -12,15 +12,12 @@ class Timer:
         self.hold = False
         
         """
-        # How to use...
-        
-        1- uses for make a delay AFTER BUTTON CLICKED
-        2- before the button clicked, start the delay for holding
-        3- check from the pressed case, if pressed means that the hold knows that action happend
-                so, it will start holding
-        4- after the time passes based on the counter, the pressed and hold will be reseted
-        5- that's it 
+        Cooldown timer that prevents rapid button toggling.
 
+        1. Set pressed = True when the action triggers.
+        2. The timer starts counting (hold = True).
+        3. Once count >= limit, both pressed and hold reset to False.
+        4. Check hold before allowing the next action.
         """
     def delay(self):
         if self.pressed:

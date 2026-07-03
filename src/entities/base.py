@@ -4,13 +4,14 @@ import pygame
 
 class Entity(pygame.sprite.Sprite):
     """
-    🧱 BASE ENTITY (Now a real pygame.sprite.Sprite)
+    BASE ENTITY (inherits from pygame.sprite.Sprite)
 
-    الفرق عن الكلاس القديم:
-    - بيورث من pygame.sprite.Sprite عشان ينضم لأي Group (all_sprites, zombies_group...)
-    - لازم كل subclass يحدد self.image (Surface) عشان الـ Group تقدر ترسمه تلقائيًا
-      عن طريق group.draw(screen)
-    - self.kill() بقت متاحة افتراضيًا بدل ما تعمل remove() يدوي من اللستة
+    Key changes from the legacy design:
+    - Extends pygame.sprite.Sprite so it can be added to any Group
+      (all_sprites, zombies_group, …) and leverage group collision helpers.
+    - Every subclass must provide self.image (a Surface) so that
+      group.draw(screen) works automatically.
+    - self.kill() is available out of the box — no more manual list removal.
     """
 
     def __init__(self, x, y, width, height, *groups):

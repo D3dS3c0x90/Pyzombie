@@ -79,9 +79,9 @@ def spawn_store_collision(tiled_map):
                 store_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
                 BUILDINGS["Store"].append(store_rect)
                 
-def spawn_dealler_collision(tiled_map):
+def spawn_dealer_collision(tiled_map):
     for layer in tiled_map.tmx_data.visible_layers:
-        if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "dealler":
+        if isinstance(layer, pytmx.TiledObjectGroup) and layer.name == "dealer":
             for obj in layer:
-                dealler_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
-                BUILDINGS["Dealler"].append(dealler_rect)
+                dealer_rect = pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                BUILDINGS["Dealer"].append(dealer_rect)

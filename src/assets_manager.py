@@ -1,8 +1,9 @@
 # src/assets_manager.py
 import pygame
 from pathlib import Path
+from src.settings import WHOLE_LIST, ACTION_LIST
 
-# 🎒 الكاش العام - في الرامات طول وقت تشغيل اللعبة
+# Global asset cache — lives in memory for the entire game session
 animations = {}
 sprites = {}
 sounds = {}
@@ -108,8 +109,30 @@ def load_zombie_assets():
 
 def load_scenery_assets():
     # trees_png = image_load("assets/Trees1.png")
-    sprites["tree_1"] = pygame.transform.scale(image_load("assets/\decorations/tree_1.png").subsurface((0, 0, 112, 192)), (120, 240))
+    sprites["tree_1"] = pygame.transform.scale(image_load("assets/decorations/tree_1.png").subsurface((0, 0, 112, 192)), (120, 240))
     sprites["inventory"] = pygame.transform.scale(image_load("assets/inventory/inventory.png").subsurface((0, 0, 1234, 809)), (1000, 657))
+    sprites["pointer"] = image_load("assets/inventory/pointer.png").subsurface((0, 0, 80, 80))
+    # sprites["list"] = pygame.transform.scale(image_load("assets/inventory/list/list.png").subsurface((0, 0, 516, 416)), (248, 200))
+    
+    all_list_components = get_path_files("assets/inventory/list")
+    for component in all_list_components:
+        
+        part_name = str(component).split("/")[-1].split(".")[0]
+        image = image_load(component)
+        sprites[part_name] = image 
+        WHOLE_LIST.append(image)
+        
+    all_list_actions = get_path_files("assets/inventory/actions")
+    ACTION_LIST.append(None)
+    for component in all_list_actions:
+        
+        part_name = str(component).split("/")[-1].split(".")[0]
+        image = image_load(component)
+        sprites[part_name] = image 
+        ACTION_LIST.append(image)
+        
+    sprites["hover_blood"] = pygame.transform.scale(image_load("assets/inventory/selected.png").subsurface((0, 0, 400, 60)), (190, 32))
+        
     # sprites["bush_1"] = pygame.transform.scale(trees_png.subsurface((185, 75, 50, 50)), (80, 80))
     # sprites["bush_2"] = pygame.transform.scale(trees_png.subsurface((190, 130, 40, 40)), (80, 80))
 

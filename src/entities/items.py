@@ -12,7 +12,7 @@ class Item(Entity):
         self.amount = amount
         self.type = type
         self.up = True
-        self.is_taked = False
+        self.is_taken = False
         self.ID = ""
         self.name = ""
         self.image = image

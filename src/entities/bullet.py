@@ -24,8 +24,9 @@ class Bullet(Entity):
         pygame.draw.circle(self.image, (255, 255, 0), (3, 3), 3)
 
     def update(self):
-        """يرجّع True لما المدى يخلص — استدعيها بدل ما تعتمد على kill() مباشرة
-        عشان نفس سلوك الكود الأصلي (الـ caller هو اللي بيقرر يـ remove)."""
+        """Returns True when the bullet's travel distance is exhausted.
+        The caller decides whether to kill(), preserving the original
+        control flow where the game loop manages removal."""
         self.x += self.dir_x * self.speed
         self.y += self.dir_y * self.speed
         self.update_rect()

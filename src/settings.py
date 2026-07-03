@@ -25,12 +25,15 @@ YELLOW = (255, 255, 0)
 PIXEL_FONT = "assets/fonts/Minecraft.ttf"
 
 WALLS = []
-# 0 -> in, 1 -> out, 2 -> store, 3 -> dealler
+WHOLE_LIST = []
+ACTION_LIST = []
+
+# 0 -> in, 1 -> out, 2 -> store, 3 -> dealer
 IS_COLLISIONED = [False for i in range(4)]
 
 BUILDINGS = {
     "Store":[],
-    "Dealler":[]
+    "Dealer":[]
 }
 
 ITEMS = {}

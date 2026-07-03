@@ -1,9 +1,9 @@
 # src/core/id_generator.py
 """
-🆔 ID GENERATOR
-بديل نظيف للـ global mutable variables (ZOMBIE_ID, BULLET_ID) اللي كانت
-في settings.py القديم. كل entity نوع بياخد counter منفصل بدون استخدام
-global keyword جوه entities.py.
+ID GENERATOR
+Clean alternative to global mutable counters. Each entity type gets its own
+sequential counter, eliminating the need for the global keyword inside entity
+modules and keeping ID logic self-contained.
 """
 from itertools import count
 

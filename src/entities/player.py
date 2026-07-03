@@ -34,7 +34,7 @@ class Player(Entity):
         self.animation_speed = 0.2
         self.fire_animation_speed = 0.6
         
-        self.enteract_rect = pygame.Rect(self.x, self.y, self.image.get_width(), self.image.get_height())
+        self.interact_rect = pygame.Rect(self.x, self.y, self.image.get_width(), self.image.get_height())
 
         self.update_rect()
 
@@ -44,10 +44,10 @@ class Player(Entity):
         self.rect.width = 30
         self.rect.height = 30
         
-        self.enteract_rect.x = self.x - 5
-        self.enteract_rect.y = self.y + 35
-        self.enteract_rect.width = (self.image.get_width() // 2) - 10
-        self.enteract_rect.height = (self.image.get_height() // 2) - 10
+        self.interact_rect.x = self.x - 5
+        self.interact_rect.y = self.y + 35
+        self.interact_rect.width = (self.image.get_width() // 2) - 10
+        self.interact_rect.height = (self.image.get_height() // 2) - 10
 
     def reload(self, keys, mouse):
         if keys[pygame.K_r] or mouse[2]:
@@ -143,8 +143,9 @@ class Player(Entity):
 
     def get_current_image(self, camera_x, camera_y):
         """
-        بيحدّث self.image كمان (مش بس بيرجعها) عشان لو حبيت تستخدم
-        all_sprites.draw(screen) في المستقبل بدل البلِت اليدوي تلاقي self.image جاهزة.
+        Updates self.image in-place (not just returning a surface).
+        This keeps the sprite ready for automatic rendering via
+        all_sprites.draw(screen) if we ever switch from manual blitting.
         """
         action = self.determine_action_state()
 

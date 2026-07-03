@@ -22,11 +22,11 @@ from src.world.safe_zone import SafeZone
 import src.core.clock as clock_and_time
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT,
-    FPS, ZOMBIED, MUSIC_ENDED_EVENT, IS_INVENTORY_OPEN, BUILDINGS, IS_COLLISIONED, ITEMS
+    FPS, WHOLE_LIST, MUSIC_ENDED_EVENT, IS_INVENTORY_OPEN, BUILDINGS, IS_COLLISIONED, ITEMS, ACTION_LIST
     )
 
 def _init_items():
-    global ITEMS
+    global ITEMS, WHOLE_LIST
     ITEMS = {
         "Health" : {
             "health_1":{"name" : "Small Health", "amount" : 10, "image" : assets.sprites["health_1"]},
@@ -53,14 +53,22 @@ def _init_items():
             # {"name" : "semi_ammo_2", "amount" : 70, "image" : sprites[""]},
             # {"name" : "semi_ammo_3", "amount" : 100, "image" : sprites[""]},
             },
-        
     }
+    
+    temp = []
+    temp = [inventory.ListComponent(component) for component in WHOLE_LIST]
+    
+    WHOLE_LIST = []
+    WHOLE_LIST = [component for component in temp]
+        
+    temp = None
 
 class GameEngine:
     """
-    🕹️ THE CORE GAME CONTROLLER
-    دلوقتي بقت مسؤولة بس عن orchestration: تبدأ subsystems، تشغّل اللووب،
-    وتنادي عليهم. المنطق التفصيلي اتنقل لـ entities/ و systems/.
+    THE CORE GAME CONTROLLER
+    Orchestrates all subsystems: initialises entities, systems, and UI modules,
+    then drives the main update/render loop. Gameplay logic lives in entities/
+    and systems/; this class keeps them connected.
     """
 
     def __init__(self):
@@ -101,7 +109,7 @@ class GameEngine:
         spawn.spawn_trees_from_map(self.tiled_map, self.trees_group)
         spawn.spawn_walls_collision(self.tiled_map)
         spawn.spawn_store_collision(self.tiled_map)
-        spawn.spawn_dealler_collision(self.tiled_map)
+        spawn.spawn_dealer_collision(self.tiled_map)
 
         self.crosshair = assets.sprites["crosshair"]
         pygame.mouse.set_visible(False)
@@ -127,7 +135,7 @@ class GameEngine:
             self.inventory_start_x,
             self.inventory_start_y,
             assets.sprites["inventory"].get_width(), assets.sprites["inventory"].get_height(), 
-            assets.sprites["inventory"], []
+            assets.sprites["inventory"], self.screen, []
             )
 
         self.damage_indicators = []
@@ -185,7 +193,7 @@ class GameEngine:
             elif event.type == MUSIC_ENDED_EVENT:
                 self._play_random_background_music()
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not self.inventory.active_list and not IS_INVENTORY_OPEN:
                 self._try_fire()
                 
             self.inventory.drop_down_list(event)
@@ -226,11 +234,16 @@ class GameEngine:
         if not self.inventory_timer.hold:
             if keys[pygame.K_e]:
                 if IS_INVENTORY_OPEN:
-                    IS_INVENTORY_OPEN = False
+                    if keys[pygame.K_ESCAPE] or keys[pygame.K_e]:
+                        IS_INVENTORY_OPEN = False
+                        self.inventory.active_list = False
                 elif not IS_INVENTORY_OPEN and True not in IS_COLLISIONED:
                     IS_INVENTORY_OPEN = True
                 if True not in IS_COLLISIONED:
                     self.inventory_timer.pressed = True
+        if keys[pygame.K_ESCAPE] and IS_INVENTORY_OPEN:
+            IS_INVENTORY_OPEN = False
+            self.inventory.active_list = False
         self.inventory_timer.delay()
 
         self.player.move(keys, trees=self.trees_group, base=self.safezone)
@@ -248,7 +261,7 @@ class GameEngine:
         
         self.fixed_notifications = []
         for _, (col_type, collision) in enumerate(BUILDINGS.items()):
-            collision_hit = collisions.player_enteract(self.player, collision, col_type, self.screen, keys)
+            collision_hit = collisions.player_interact(self.player, collision, col_type, self.screen, keys)
             if collision_hit[0]:
                 self.fixed_notifications.append([notification.FixedNotification(text=f"For {col_type} Press ", image=assets.sprites["E"]), collision_hit[1]])
 
@@ -319,8 +332,8 @@ class GameEngine:
 
     def _update_items(self):
         for item in list(self.items_group):
-            if not item.is_taked and collisions.player_item_collision(item, self.player):
-                item.is_taked = True
+            if not item.is_taken and collisions.player_item_collision(item, self.player):
+                item.is_taken = True
                 if item.type == "Coins":
                     self.player.coins += item.amount
                     combat.play_sound_randomly("coins")
@@ -334,7 +347,7 @@ class GameEngine:
                     notification.Notification(text=f"+{item.amount} {item.type} ", image=notify_icon)
                 )
 
-            if item.is_taked:
+            if item.is_taken:
                 item.kill()
             else:
                 item.up_down()
@@ -409,11 +422,11 @@ class GameEngine:
         # rect_draw_x = self.player.rect.x - cam_x
         # rect_draw_y = self.player.rect.y - cam_y
         
-        # erect_draw_x = self.player.enteract_rect.x - cam_x
-        # erect_draw_y = self.player.enteract_rect.y - cam_y
+        # erect_draw_x = self.player.interact_rect.x - cam_x
+        # erect_draw_y = self.player.interact_rect.y - cam_y
         
         # pygame.draw.rect(self.screen, (255,0,0), (rect_draw_x, rect_draw_y, self.player.rect.width, self.player.rect.height), 2)
-        # pygame.draw.rect(self.screen, (255,100,0), (erect_draw_x, erect_draw_y, self.player.enteract_rect.width, self.player.enteract_rect.height), 2)
+        # pygame.draw.rect(self.screen, (255,100,0), (erect_draw_x, erect_draw_y, self.player.interact_rect.width, self.player.interact_rect.height), 2)
 
         self.screen.blit(player_img, (p_draw_x, p_draw_y))
         for tree in self.trees_group:
@@ -452,17 +465,36 @@ class GameEngine:
 
         #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, store_rect.width, store_rect.height), 2)
             
-        # for dealler_rect in DEALLER:
-        #     draw_x = dealler_rect.x - cam_x
-        #     draw_y = dealler_rect.y - cam_y
+        # for dealer_rect in DEALER:
+        #     draw_x = dealer_rect.x - cam_x
+        #     draw_y = dealer_rect.y - cam_y
 
-        #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, dealler_rect.width, dealler_rect.height), 2)
+        #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, dealer_rect.width, dealer_rect.height), 2)
         
         if IS_INVENTORY_OPEN:
             self.inventory.items = self.inventory_items_group
-            self.inventory.draw(
-                screen=self.screen,
-            )   
+            self.inventory.draw()   
+            if self.inventory.active_list:
+                self.screen.blit(assets.sprites["pointer"], (self.inventory.list_x - 8, self.inventory.list_y - next(iter(self.inventory_items_group)).rect.height - 4))
+                first = 1
+                y_value = 0
+                # ACTION_LIST
+                for component, word in zip(WHOLE_LIST, ACTION_LIST):
+                    if first:
+                        self.screen.blit(component.image, (self.inventory.list_x - 10, self.inventory.list_y + 10))
+                        component.rect.y = self.inventory.list_y + 10
+                    else:
+                        self.screen.blit(component.image, (self.inventory.list_x - 10, self.inventory.list_y + 10 + y_value))
+                        self.screen.blit(word, (self.inventory.list_x + 20, self.inventory.list_y + 10 + y_value))
+                        component.rect.y = self.inventory.list_y + 10 + y_value
+                        
+                    if component.rect.collidepoint(self.mx, self.my) and not first:
+                        self.screen.blit(assets.sprites["hover_blood"], (self.inventory.list_x + 10, self.inventory.list_y + 10 + y_value))
+                        
+                    first = False
+                    component.rect.x = self.inventory.list_x - 10
+                    y_value += component.image.get_height()
+                        
 
         player_info = player_state_module.PlayerState(
             self.screen, [0, SCREEN_HEIGHT - 120], [160, SCREEN_HEIGHT - 105], self.player
