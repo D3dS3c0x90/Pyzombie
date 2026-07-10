@@ -22,7 +22,8 @@ from src.world.safe_zone import SafeZone
 import src.core.clock as clock_and_time
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT,
-    FPS, WHOLE_LIST, MUSIC_ENDED_EVENT, IS_INVENTORY_OPEN, BUILDINGS, IS_COLLISIONED, ITEMS, ACTION_LIST
+    FPS, WHOLE_LIST, MUSIC_ENDED_EVENT, IS_INVENTORY_OPEN, BUILDINGS, IS_COLLISIONED, ITEMS, ACTION_LIST,
+    GLOBAL_NOTIFICATIONS, HEALTH_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, ITEMS_KEYS
     )
 
 def _init_items():
@@ -45,7 +46,7 @@ def _init_items():
         #     {"name" : "food_3", "amount" : 35, "image" : sprites[""]},
         # ], 
         "Ammo" : {
-            "rifle_ammo_1":{"name" : "5.56×45mm", "amount" : 10, "image" : assets.sprites["ammo"]},
+            "rifle_ammo_1":{"name" : "5.56x45mm", "amount" : 10, "image" : assets.sprites["ammo"]},
             # {"name" : "5.56×45mm", "amount" : 20, "image" : sprites[""]},
             # {"name" : "5.56×45mm", "amount" : 35, "image" : sprites[""]},
             
@@ -73,11 +74,13 @@ class GameEngine:
 
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.display.set_caption("Last Green - Sprite-Based Engine")
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+        pygame.display.set_caption("Pyzombie - Survive or Die")
         self.clock = pygame.time.Clock()
 
         assets.load_all_assets()
+        
+        self.hovered_counter = [None for _ in ACTION_LIST]
 
         pygame.mixer.music.set_endevent(MUSIC_ENDED_EVENT)
         self._play_random_background_music()
@@ -97,7 +100,10 @@ class GameEngine:
         self.bullets_group = pygame.sprite.Group()
         self.dead_bullets_group = pygame.sprite.Group()
         
-        self.inventory_items_group = pygame.sprite.Group()
+        self.inventory_group = pygame.sprite.Group()
+        self.inventory_ammo_group = pygame.sprite.Group()
+        self.inventory_health_group = pygame.sprite.Group()
+        self.inventory_gear_group = pygame.sprite.Group()
 
         self.minimap = minimap_module.Minimap()
         self.safezone = SafeZone(
@@ -112,6 +118,7 @@ class GameEngine:
         spawn.spawn_dealer_collision(self.tiled_map)
 
         self.crosshair = assets.sprites["crosshair"]
+        self.pointer = assets.sprites["crosshair_pointer"]
         pygame.mouse.set_visible(False)
 
         self.player = Player(WORLD_WIDTH - 300, 300, assets.animations, self.all_sprites)
@@ -125,18 +132,36 @@ class GameEngine:
                 self.all_sprites, self.zombies_group,
             )
         
-        self.inventory_start_x = (SCREEN_WIDTH - assets.sprites["inventory"].get_width()) // 2
-        self.inventory_start_y = (SCREEN_HEIGHT - assets.sprites["inventory"].get_height() - 100) // 2
+        self.inventory_start_x = (SCREEN_WIDTH - assets.sprites["inventory"]["Ammo"].get_width()) // 2
+        self.inventory_start_y = (SCREEN_HEIGHT - assets.sprites["inventory"]["Ammo"].get_height() - 100) // 2
             
         self.item_start_x = self.inventory_start_x + 180   
         self.item_start_y = self.inventory_start_y + 75 
         
-        self.inventory = inventory.Inventory(
-            self.inventory_start_x,
-            self.inventory_start_y,
-            assets.sprites["inventory"].get_width(), assets.sprites["inventory"].get_height(), 
-            assets.sprites["inventory"], self.screen, []
-            )
+        self.inventory = {
+            "Health" : inventory.Inventory(
+                        self.inventory_start_x,
+                        self.inventory_start_y,
+                        assets.sprites["inventory"]["Health"].get_width(), assets.sprites["inventory"]["Health"].get_height(), 
+                        assets.sprites["inventory"]["Health"], self.screen, []
+                        ),
+            "Ammo" : inventory.Inventory(
+                        self.inventory_start_x,
+                        self.inventory_start_y,
+                        assets.sprites["inventory"]["Ammo"].get_width(), assets.sprites["inventory"]["Ammo"].get_height(), 
+                        assets.sprites["inventory"]["Ammo"], self.screen, []
+                        ),
+            "Gear" : inventory.Inventory(
+                        self.inventory_start_x,
+                        self.inventory_start_y,
+                        assets.sprites["inventory"]["Gear"].get_width(), assets.sprites["inventory"]["Gear"].get_height(), 
+                        assets.sprites["inventory"]["Gear"], self.screen, []
+                        ),
+        }
+        
+        self.player_info = player_state_module.PlayerState(
+            self.screen, [0, SCREEN_HEIGHT - 120], [160, SCREEN_HEIGHT - 30], self.player
+        )
 
         self.damage_indicators = []
         self.notifications = []
@@ -162,14 +187,93 @@ class GameEngine:
         pygame.mixer.music.load(music_track)
         pygame.mixer.music.play(loops=0)
         
+    def _reset_inventory_taps(self):
+        global HEALTH_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, GEAR_INVENTORY_OPEN
+        
+        HEALTH_INVENTORY_OPEN = True
+        AMMO_INVENTORY_OPEN = False
+        GEAR_INVENTORY_OPEN = False
+        
+    def _inventory_preparing(self, inventory_items_group, category):
+        self.inventory[category].items = inventory_items_group
+        self.inventory[category].draw()   
+        for item in self.inventory[category].items:
+            quantity_surface = item.quantity_font.render(str(item.quantity), False, "#FFFFFF")
+            quantity_shadow_surface = item.quantity_shadow_font.render(str(item.quantity), True, (0, 0, 0))
+            
+            self.screen.blit(quantity_shadow_surface, (item.rect.x + 3, item.rect.y + 3))
+            self.screen.blit(quantity_surface, (item.rect.x + 5, item.rect.y + 5))
+            
+        if self.inventory[category].active_list:
+            if len(inventory_items_group) > 0:
+                self.screen.blit(assets.sprites["pointer"], (self.inventory[category].list_x - 8, self.inventory[category].list_y - next(iter(inventory_items_group)).rect.height - 4))
+            first = 1
+            y_value = 0
+            self.hovered_counter = [None for _ in ACTION_LIST]
+            
+            # ACTION_LIST
+            for i, (component, word) in enumerate(zip(WHOLE_LIST, ACTION_LIST)):
+                if first:
+                    component.reset()
+                    self.screen.blit(component.image, (self.inventory[category].list_x - 10, self.inventory[category].list_y + 10))
+                    
+                    shadow_surf = self.inventory[category].selected_item.shadow_surface
+                    text_surf = self.inventory[category].selected_item.text_surface
+                    
+                    self.screen.blit(shadow_surf, (self.inventory[category].list_x + 48, self.inventory[category].list_y + 33))
+                    self.screen.blit(text_surf, (self.inventory[category].list_x + 50, self.inventory[category].list_y + 35))
+                    component.rect.y = self.inventory[category].list_y + 10
+                else:
+                    self.screen.blit(component.image, (self.inventory[category].list_x - 10, self.inventory[category].list_y + 10 + y_value))
+                    self.screen.blit(word, (self.inventory[category].list_x + 20, self.inventory[category].list_y + 10 + y_value))
+                    component.rect.y = self.inventory[category].list_y + 10 + y_value
+                    
+                if component.rect.collidepoint(self.mx, self.my) and not first:
+                    self.screen.blit(assets.sprites["hover_blood"], (self.inventory[category].list_x + 10, self.inventory[category].list_y + 10 + y_value))
+                    self.hovered_counter[i] = 1
+                    
+                first = False
+                component.rect.x = self.inventory[category].list_x - 10
+                y_value += component.image.get_height()
+        
     def init_items(self):
         health = ITEMS["Health"]["health_1"]
-        health_item = inventory.Item(self.item_start_x, self.item_start_y, health, "Health", self.inventory_items_group)
+        health_item = inventory.Item(self.item_start_x, self.item_start_y, health, "Health", self.player, self.inventory_health_group, self.inventory_group)
         health_item.inc(3)
         
         ammo = ITEMS["Ammo"]["rifle_ammo_1"]
-        ammo_item = inventory.Item(self.item_start_x, self.item_start_y, ammo, "Ammo", self.inventory_items_group)
-        ammo_item.inc(2)
+        ammo_item = inventory.Item(self.item_start_x, self.item_start_y, ammo, "Ammo", self.player, self.inventory_ammo_group, self.inventory_group)
+        ammo_item.inc(8)
+        
+        # =================================================================
+        # 🔥 PRESERVED ORIGINAL BUG AREA (As requested for manual debugging)
+        # =================================================================
+        for index, item in enumerate(self.inventory_group):
+            self.player_info.add_item(str(index + 2), item)
+        
+    def _active_inventory(self):
+        if HEALTH_INVENTORY_OPEN:
+            return self.inventory["Health"]
+        if AMMO_INVENTORY_OPEN:
+            return self.inventory["Ammo"]
+        if GEAR_INVENTORY_OPEN:
+            return self.inventory["Gear"]
+        return None
+    
+    def _set_active_tab(self, category):
+        global HEALTH_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, AMMO_INVENTORY_OPEN
+        if category == "Health":
+            HEALTH_INVENTORY_OPEN = True
+            AMMO_INVENTORY_OPEN = False
+            GEAR_INVENTORY_OPEN = False
+        elif category == "Ammo":
+            HEALTH_INVENTORY_OPEN = False
+            AMMO_INVENTORY_OPEN = True
+            GEAR_INVENTORY_OPEN = False
+        elif category == "Gear":
+            HEALTH_INVENTORY_OPEN = False
+            AMMO_INVENTORY_OPEN = False
+            GEAR_INVENTORY_OPEN = True
         
     def run(self):
         while self.running:
@@ -186,17 +290,63 @@ class GameEngine:
     # 🎮 EVENTS
     # ==========================================================
     def handle_events(self):
+        """Main event loop. Processes system, keyboard, and mouse inputs in a single method."""
+        global ITEMS_KEYS
+        
+        # Define the hotbar numbers once outside the loop for better performance
+        num_list = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        
         for event in pygame.event.get():
+            
+            # 1. Handle Window Quit & Escape Toggle
             if event.type == pygame.QUIT:
                 self.running = False
+                continue
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and not IS_INVENTORY_OPEN:
+                self.running = False
+                continue
 
+            # 2. Handle Audio & Background Music Tracking
             elif event.type == MUSIC_ENDED_EVENT:
                 self._play_random_background_music()
+                continue
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not self.inventory.active_list and not IS_INVENTORY_OPEN:
-                self._try_fire()
+            # 3. Handle Keyboard Inputs (Hotbar Slots & Key Releases)
+            if event.type in (pygame.KEYDOWN, pygame.KEYUP):
+                key_name = pygame.key.name(event.key)
                 
-            self.inventory.drop_down_list(event)
+                if key_name in num_list:
+                    # Reset all slots and activate the currently pressed number key
+                    for key in num_list:
+                        ITEMS_KEYS[key] = False
+                    ITEMS_KEYS[str(key_name)] = True
+                    
+                    if event.type == pygame.KEYUP:
+                        self.player_info.key_release = True
+
+            # Get the currently active inventory tab state
+            active_inv = self._active_inventory()
+
+            # 4. Handle Mouse Clicks (Combat Firing & Inventory Tabs Context)
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Context A: Gameplay is active -> Fire weapon
+                if not IS_INVENTORY_OPEN and not (active_inv and active_inv.active_list):
+                    self._try_fire()
+                
+                # Context B: Inventory Overlay is active -> Check tab switching clicks
+                elif IS_INVENTORY_OPEN:
+                    for i, tap_rect in enumerate(self.inventory["Health"].taps):
+                        if tap_rect.collidepoint(event.pos):
+                            self._set_active_tab(["Health", "Ammo", "Gear"][i])
+                            
+                    self.player_info.drag_item(event.pos)
+
+            # 5. Process Active Inventory Context Dropdowns
+            if active_inv:
+                active_inv.drop_down_list(event, self.hovered_counter)
+                                
+            # 6. Dispatch General Player Collision Event Detection
+            self.player_info.collision_event_detection(event, IS_INVENTORY_OPEN)
 
     def _try_fire(self):
         if self.player.ammo_count <= 0:
@@ -229,25 +379,32 @@ class GameEngine:
         keys = pygame.key.get_pressed()
         mouse = pygame.mouse.get_pressed()
         self.mx, self.my = pygame.mouse.get_pos()
-        
-        # self.timer.limit = 10
+                
         if not self.inventory_timer.hold:
             if keys[pygame.K_e]:
                 if IS_INVENTORY_OPEN:
                     if keys[pygame.K_ESCAPE] or keys[pygame.K_e]:
                         IS_INVENTORY_OPEN = False
-                        self.inventory.active_list = False
+                        self.inventory["Health"].active_list = False
+                        self.inventory["Ammo"].active_list = False
+                        self.inventory["Gear"].active_list = False
+                        self._reset_inventory_taps()
+                        self.hovered_counter = [None for _ in ACTION_LIST]
                 elif not IS_INVENTORY_OPEN and True not in IS_COLLISIONED:
                     IS_INVENTORY_OPEN = True
                 if True not in IS_COLLISIONED:
                     self.inventory_timer.pressed = True
         if keys[pygame.K_ESCAPE] and IS_INVENTORY_OPEN:
             IS_INVENTORY_OPEN = False
-            self.inventory.active_list = False
+            self.inventory["Health"].active_list = False
+            self.inventory["Ammo"].active_list = False
+            self.inventory["Gear"].active_list = False
+            self._reset_inventory_taps()
         self.inventory_timer.delay()
 
         self.player.move(keys, trees=self.trees_group, base=self.safezone)
-        self.player.reload(keys, mouse)
+        if not IS_INVENTORY_OPEN:
+            self.player.reload(keys, mouse)
 
         current_state = self.player.determine_action_state()
         self.player.update_animation(current_state)
@@ -470,36 +627,35 @@ class GameEngine:
         #     draw_y = dealer_rect.y - cam_y
 
         #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, dealer_rect.width, dealer_rect.height), 2)
-        
         if IS_INVENTORY_OPEN:
-            self.inventory.items = self.inventory_items_group
-            self.inventory.draw()   
-            if self.inventory.active_list:
-                self.screen.blit(assets.sprites["pointer"], (self.inventory.list_x - 8, self.inventory.list_y - next(iter(self.inventory_items_group)).rect.height - 4))
-                first = 1
-                y_value = 0
-                # ACTION_LIST
-                for component, word in zip(WHOLE_LIST, ACTION_LIST):
-                    if first:
-                        self.screen.blit(component.image, (self.inventory.list_x - 10, self.inventory.list_y + 10))
-                        component.rect.y = self.inventory.list_y + 10
-                    else:
-                        self.screen.blit(component.image, (self.inventory.list_x - 10, self.inventory.list_y + 10 + y_value))
-                        self.screen.blit(word, (self.inventory.list_x + 20, self.inventory.list_y + 10 + y_value))
-                        component.rect.y = self.inventory.list_y + 10 + y_value
-                        
-                    if component.rect.collidepoint(self.mx, self.my) and not first:
-                        self.screen.blit(assets.sprites["hover_blood"], (self.inventory.list_x + 10, self.inventory.list_y + 10 + y_value))
-                        
-                    first = False
-                    component.rect.x = self.inventory.list_x - 10
-                    y_value += component.image.get_height()
-                        
+            if HEALTH_INVENTORY_OPEN:
+                the_uni_inventory = self.inventory["Health"]
+                self._inventory_preparing(self.inventory_health_group, "Health")
+            elif AMMO_INVENTORY_OPEN:
+                the_uni_inventory = self.inventory["Ammo"]
+                self._inventory_preparing(self.inventory_ammo_group, "Ammo")
+            elif GEAR_INVENTORY_OPEN:
+                the_uni_inventory = self.inventory["Gear"]
+                self._inventory_preparing(self.inventory_gear_group, "Gear")
+            # for tap in the_uni_inventory.taps:
+            #     pygame.draw.rect(self.screen, "#FF0000", (tap.x, tap.y, tap.width, tap.height), 2)
+                
+            for notify in GLOBAL_NOTIFICATIONS[:]:
+                if HEALTH_INVENTORY_OPEN:
+                    notify.draw(self.screen, the_uni_inventory.list_x + 130, the_uni_inventory.list_y + 10)
+                elif AMMO_INVENTORY_OPEN:
+                    notify.draw(self.screen, the_uni_inventory.list_x + 130, the_uni_inventory.list_y + 10)
+                elif GEAR_INVENTORY_OPEN:
+                    notify.draw(self.screen, the_uni_inventory.list_x + 130, the_uni_inventory.list_y + 10)
+                if notify.update():
+                    GLOBAL_NOTIFICATIONS.remove(notify)
 
-        player_info = player_state_module.PlayerState(
-            self.screen, [0, SCREEN_HEIGHT - 120], [160, SCREEN_HEIGHT - 105], self.player
-        )
-        player_info.draw()
+        self.player_info.draw()
 
-        self.screen.blit(self.crosshair, (self.mx, self.my))
+        if IS_INVENTORY_OPEN:
+            if self.player_info.dragged_item["char"]:
+                self.screen.blit(self.player_info.dragged_item["item"].image, (self.mx - 20, self.my - 20))
+            self.screen.blit(self.pointer, (self.mx, self.my))
+        else:
+            self.screen.blit(self.crosshair, (self.mx, self.my))
         pygame.display.flip()

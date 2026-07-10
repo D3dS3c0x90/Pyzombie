@@ -15,7 +15,7 @@ class TextMessage:
         self.lifetime = lifetime
         self.max_lifetime = lifetime
         self.alpha = 255
-        self.font = pygame.font.SysFont("Arial", 24, bold=True)
+        self.font = pygame.font.Font(settings.PIXEL_FONT, 24)
 
     def update(self):
         self.y -= self.vertical_speed
@@ -63,8 +63,10 @@ class DamageNumber(TextMessage):
 
 
 class Notification(TextMessage):
-    def __init__(self, text, image, color=(255, 255, 255)):
+    def __init__(self, x=0, y=0, text="", image=None, color=(255, 255, 255)):
         super().__init__(text=text, amount="", image=image, color=color, lifetime=90, speed=1)
+        self.world_x = x
+        self.world_y = y
 
 class FixedNotification:
     def __init__(self, text="", amount="", color=(255, 255, 255), image=None):

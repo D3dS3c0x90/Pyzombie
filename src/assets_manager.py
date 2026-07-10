@@ -71,15 +71,30 @@ def load_player_assets():
 
     player_state_png = image_load("assets/Player/player_state.png")
     sprites["player_state"] = pygame.transform.scale(
-        player_state_png, (player_state_png.get_width(), player_state_png.get_height() + 30)
+        player_state_png, (player_state_png.get_width() + 65, player_state_png.get_height())
     )
 
-    player_health_bar_png = image_load("assets/Player/player_health_bar.png")
-    sprites["player_health_bar"] = [
-        pygame.transform.scale(player_health_bar_png.subsurface((col * 224, 0, 224, 48)), (180, 20)).copy()
-        for col in range(11)
-    ]
+    player_health_bar_png = image_load("assets/Player/health_bar.png")
+    sprites["player_health_bar"] =  player_health_bar_png.subsurface((0, 0, 2, 20))
+    
+    player_health_banner_png = image_load("assets/Player/health_banner.png")
+    sprites["player_health_banner"] =  player_health_banner_png.subsurface((0, 0, 200, 20))
 
+    player_empty_health_banner_png = image_load("assets/Player/health_bar_empty.png")
+    sprites["player_empty_health_banner"] =  player_empty_health_banner_png.subsurface((0, 0, 2, 20))
+
+    chars_png = image_load("assets/chars/numbers.png")
+    for i in range(9):
+        sprites[f"char_{i + 1}"] = pygame.transform.scale(chars_png.subsurface((i * 16, 0, 16, 24)), (18, 24))
+    sprites[f"char_0"] = pygame.transform.scale(chars_png.subsurface((9 * 16, 0, 16, 24)), (18, 24))
+    for i in range(10, 12):
+        sprites[f"char_{i}"] = pygame.transform.scale(chars_png.subsurface((i * 16, 0, 16, 24)), (18, 24))
+    
+    item_background_png = image_load("assets/Player/items/selected_item.png")
+    sprites["item_background"] = pygame.transform.scale(item_background_png, (item_background_png.get_width(), item_background_png.get_height()))
+    
+    pointer_background_png = image_load("assets/Player/items/item_point.png")
+    sprites["pointer_background"] = pygame.transform.scale(pointer_background_png, (pointer_background_png.get_width(), pointer_background_png.get_height()))
 
 def load_dropped_item_assets():
 
@@ -110,9 +125,16 @@ def load_zombie_assets():
 def load_scenery_assets():
     # trees_png = image_load("assets/Trees1.png")
     sprites["tree_1"] = pygame.transform.scale(image_load("assets/decorations/tree_1.png").subsurface((0, 0, 112, 192)), (120, 240))
-    sprites["inventory"] = pygame.transform.scale(image_load("assets/inventory/inventory.png").subsurface((0, 0, 1234, 809)), (1000, 657))
     sprites["pointer"] = image_load("assets/inventory/pointer.png").subsurface((0, 0, 80, 80))
     # sprites["list"] = pygame.transform.scale(image_load("assets/inventory/list/list.png").subsurface((0, 0, 516, 416)), (248, 200))
+    
+    all_inventories = get_path_files("assets/inventory/inventory")
+    sprites["inventory"] = {}
+    for inv in all_inventories:
+        key = inv.stem.split("_")[0]
+        sprites["inventory"][key] = pygame.transform.scale(
+            image_load(inv).subsurface((0, 0, 1234, 809)), (1000, 657)
+        )
     
     all_list_components = get_path_files("assets/inventory/list")
     for component in all_list_components:
@@ -139,7 +161,9 @@ def load_scenery_assets():
 
 def load_misc_assets():
     crosshair_png = image_load("assets/crosshair/fire_crosshair.png")
+    pointer_png = image_load("assets/crosshair/item_pointer.png")
     sprites["crosshair"] = pygame.transform.scale(crosshair_png, (25, 25))
+    sprites["crosshair_pointer"] = pygame.transform.scale(pointer_png, (25, 25))
 
     base_png = image_load("assets/building/SafeZone_1.png")
     sprites["base"] = base_png.subsurface(0, 0, base_png.get_width(), base_png.get_height())

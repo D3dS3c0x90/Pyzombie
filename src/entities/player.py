@@ -21,12 +21,12 @@ class Player(Entity):
         self.speed = 5
 
         self.weapon_type = "Rifle"
-        self.weapon_ammo_count = 20
         self.ammo_type = "5.56×45mm"
+        self.weapon_ammo_count = 20
         self.ammo_stack = 20
         self.ammo_count = 20
 
-        self.coins = 0
+        self.coins = 13465
 
         self.step_counter = 0
         self.step_timer = 20
@@ -48,6 +48,9 @@ class Player(Entity):
         self.interact_rect.y = self.y + 35
         self.interact_rect.width = (self.image.get_width() // 2) - 10
         self.interact_rect.height = (self.image.get_height() // 2) - 10
+        
+    def draw_health_bar(self, screen, x, y):
+        screen.blit(assets.sprites["player_health_bar"], (x, y))
 
     def reload(self, keys, mouse):
         if keys[pygame.K_r] or mouse[2]:
@@ -167,8 +170,7 @@ class Player(Entity):
         return self.image
 
     def draw_health_bar(self, screen, x, y):
-        import src.assets_manager as assets
-        screen.blit(assets.sprites["player_health_bar"][self.get_health_bar_index(11)], (x, y))
+        screen.blit(assets.sprites["player_health_bar"], (x, y))
 
     def check_in_gate_notification(self, amount):
         return notification.FixedNotification(text=f"Wanna Pay {amount} for Enter?", image=assets.sprites["E"])

@@ -24,7 +24,6 @@ class Entity(pygame.sprite.Sprite):
         self.health = 100
         self.health_limit = 100
 
-        # كل entity لازم يكون عنده image (حتى لو placeholder شفاف لحد ما الـ subclass يحددها)
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
         self.rect = self.image.get_rect(topleft=(x, y))
 
@@ -52,8 +51,4 @@ class Entity(pygame.sprite.Sprite):
         return max(0, min(idx, slices - 1))
 
     def world_draw(self, screen, camera_x, camera_y):
-        """
-        رسم بسيط بإزاحة الكاميرا. متاحة لأي entity بسيط (Tree, DeadBullet...)
-        Player/Zombie عندهم منطق رسم خاص (اختيار frame) فبيعملوا override.
-        """
         screen.blit(self.image, (self.x - camera_x, self.y - camera_y))
