@@ -35,9 +35,11 @@ class Entity(pygame.sprite.Sprite):
 
     def health_system(self, entity=None, health=None):
         if entity:
-            self.health -= entity.damage
-            if self.health <= 0:
-                self.is_dead = True
+            if self.health > entity.damage:
+                self.health -= entity.damage
+            else:
+                self.health = 0
+            self.is_dead = True if self.health == 0 else False
         if health:
             if self.health_limit >= self.health + health:
                 self.health += health

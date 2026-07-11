@@ -1,6 +1,6 @@
 # inventory.py
-from src.settings import PIXEL_FONT, GLOBAL_NOTIFICATIONS
-from src.ui import notification, player_state
+from src.settings import MOON_FONT, GLOBAL_NOTIFICATIONS
+from src.ui import notification
 import pygame
 
 
@@ -124,11 +124,11 @@ class Item(pygame.sprite.Sprite):
         
         self.player = player
         
-        self.font = pygame.font.Font(PIXEL_FONT, 25)
-        self.shadow_font = pygame.font.Font(PIXEL_FONT, 26)
+        self.font = pygame.font.Font(MOON_FONT, 25)
+        self.shadow_font = pygame.font.Font(MOON_FONT, 26)
         
-        self.quantity_font = pygame.font.Font(PIXEL_FONT, 20)
-        self.quantity_shadow_font = pygame.font.Font(PIXEL_FONT, 21)
+        self.quantity_font = pygame.font.Font(MOON_FONT, 20)
+        self.quantity_shadow_font = pygame.font.Font(MOON_FONT, 21)
         
         self.text_surface = self.font.render(self.name, False, "#604e00")
         self.shadow_surface = self.shadow_font.render(self.name, True, (0, 0, 0))
@@ -159,21 +159,21 @@ class Item(pygame.sprite.Sprite):
                 if self.player.health == self.player.health_limit:
                     GLOBAL_NOTIFICATIONS.append(
                         notification.Notification(text="Your Health is Full, no Need to Use Health.", color="#a2af28",
-                                                x=self.x, y=self.y)
+                                                x=self.x, y=self.y, speed=2, lifetime=100)
                     )
                     # self.inc()
                 else:
                     self.player.health_system(health=self.amount)
                     GLOBAL_NOTIFICATIONS.append(
                         notification.Notification(text=f"+{self.amount} {self.category}", color="#006e00",
-                                                x=self.x, y=self.y)
+                                                x=self.x, y=self.y, speed=2, lifetime=100)
                     )
                     self.dic()
             elif self.category == "Ammo":
                 self.player.weapon_ammo_count += self.amount
                 GLOBAL_NOTIFICATIONS.append(
                     notification.Notification(text=f"+{self.amount} {self.category}", color="#6b7407",
-                                            x=self.x, y=self.y)
+                                            x=self.x, y=self.y, speed=2, lifetime=100)
                 )
                 self.dic()
         else:
@@ -185,12 +185,12 @@ class Item(pygame.sprite.Sprite):
                         if steps == 0:
                             GLOBAL_NOTIFICATIONS.append(
                                 notification.Notification(text="Your Health is Full, no Need to Use Health.", color="#a2af28",
-                                                        x=self.x, y=self.y)
+                                                        x=self.x, y=self.y, speed=2, lifetime=100)
                             )
                         else:
                             GLOBAL_NOTIFICATIONS.append(
                                 notification.Notification(text=f"+{amount} {self.category}", color="#006e00",
-                                                        x=self.x, y=self.y)
+                                                        x=self.x, y=self.y, speed=2, lifetime=100)
                             )
                         break
                     else:
@@ -201,7 +201,7 @@ class Item(pygame.sprite.Sprite):
                 if steps == quantity:
                     GLOBAL_NOTIFICATIONS.append(
                         notification.Notification(text=f"+{amount} {self.category}", color="#006e00",
-                                                x=self.x, y=self.y)
+                                                x=self.x, y=self.y, speed=2, lifetime=100)
                     )
                     
             elif self.category == "Ammo":
@@ -213,7 +213,7 @@ class Item(pygame.sprite.Sprite):
                     
                 GLOBAL_NOTIFICATIONS.append(
                     notification.Notification(text=f"+{amount} {self.category}", color="#6b7407",
-                                            x=self.x, y=self.y)
+                                            x=self.x, y=self.y, speed=2, lifetime=100)
                 )
         if self.quantity == 0:
             self.kill()

@@ -1,7 +1,7 @@
 # src/ui/player_state.py
 import pygame
 import src.assets_manager as assets
-from src.settings import PIXEL_FONT, SCREEN_WIDTH, ITEMS_KEYS
+from src.settings import MOON_FONT, SCREEN_WIDTH, ITEMS_KEYS
 
 
 class PlayerState:
@@ -15,7 +15,7 @@ class PlayerState:
         self.empty_index = 0
         self.key_release = False
         
-        self.font = pygame.font.Font(PIXEL_FONT, 22)
+        self.font = pygame.font.Font(MOON_FONT, 22)
         
         self.collisions = {f"{i + 1}": pygame.Rect(
             0, 0,
@@ -125,11 +125,11 @@ class PlayerState:
     def draw(self):
         self.screen.blit(assets.sprites["player_state"], (self.blank_x, self.blank_y + 8))
         
-        for index in range(self.player.health_limit + (self.player.health - self.player.health_limit)):
+        current_health = max(0, min(self.player.health, self.player.health_limit))
+        for index in range(current_health):
             self.player.draw_health_bar(self.screen, self.health_x + index * 2, self.health_y)
-            self.empty_index = index
-        for i in range(self.empty_index, self.player.health_limit):
-            self.screen.blit(assets.sprites["player_empty_health_banner"], (self.health_x + i * 2, self.health_y))
+        for index in range(current_health, self.player.health_limit):
+            self.screen.blit(assets.sprites["player_empty_health_banner"], (self.health_x + index * 2, self.health_y))
         self.screen.blit(assets.sprites["player_health_banner"], (self.health_x, self.health_y))
 
         weapon_ammo, total_ammo = (self.player.ammo_count, self.player.weapon_ammo_count)
@@ -166,7 +166,7 @@ class PlayerState:
                     image = pygame.transform.scale(image, (self.collisions[key].width - 5, self.collisions[key].height - 5))
                     if self.dragged_item["char"] != key:
                         self.screen.blit(image, (self.blank_x + 460 + self.chars_x[key], self.blank_y + 50))
-                    item_font = pygame.font.Font(PIXEL_FONT, 18)
+                    item_font = pygame.font.Font(MOON_FONT, 18)
                     self.screen.blit(item_font.render(str(value.quantity), False, "#ffffff"), (self.collisions[key].x, self.collisions[key].y))
                 else:
                     value.kill()
@@ -174,6 +174,9 @@ class PlayerState:
                     if self.selected_char:
                         self.selected_char = None
         
+        player_state_font = pygame.font.Font(MOON_FONT, 20)
+        health_value_surface = player_state_font.render(f"{self.player.health} / {self.player.health_limit}", True, "#000000")
+        self.screen.blit(health_value_surface, (self.blank_x + 230, self.blank_y + 88))
         # for _, value in self.collisions.items():
         #     pygame.draw.rect(self.screen, (255, 0, 0), value, 1)
             

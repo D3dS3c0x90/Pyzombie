@@ -27,7 +27,8 @@ ZOMBIED = "#9d7d54"
 GREEN_BG = (34, 68, 34)
 YELLOW = (255, 255, 0)
 
-PIXEL_FONT = "assets/fonts/Minecraft.ttf"
+# PIXEL_FONT = "assets/fonts/Minecraft.ttf"
+MOON_FONT = "assets/fonts/MoonlitFlow-Italic.ttf"
 
 WALLS = []
 WHOLE_LIST = []

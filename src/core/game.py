@@ -707,8 +707,9 @@ class GameEngine:
             indicator.draw(self.screen, indicator.world_x - cam_x, indicator.world_y - cam_y)
         for indicator in self.player_indicators:
             indicator.draw(self.screen, indicator.world_x - cam_x, indicator.world_y - cam_y)
-        for notify in self.notifications:
-            notify.draw(self.screen, self.player.x - cam_x + self.player.width // 2, self.player.y - cam_y - 20)
+        for index, notify in enumerate(self.notifications):
+            if index <= 10:
+                notify.draw(self.screen, SCREEN_WIDTH - 100, SCREEN_HEIGHT - 100 + (25 * index))
         for notify in self.fixed_notifications:
             notify[0].show_text(self.screen, self.player.x - self.camera.x, self.player.y - self.camera.y, flip=None)
             

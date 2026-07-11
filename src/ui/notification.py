@@ -15,7 +15,7 @@ class TextMessage:
         self.lifetime = lifetime
         self.max_lifetime = lifetime
         self.alpha = 255
-        self.font = pygame.font.Font(settings.PIXEL_FONT, 24)
+        self.font = pygame.font.Font(settings.MOON_FONT, 23)
 
     def update(self):
         self.y -= self.vertical_speed
@@ -35,7 +35,7 @@ class TextMessage:
             total_width += self.image.get_width() + spacing
             total_height = max(total_height, self.image.get_height())
 
-        start_x = target_x - (total_width // 2) + 20
+        start_x = target_x - 75
         start_y = target_y + self.y - 10
 
         combined_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
@@ -63,10 +63,24 @@ class DamageNumber(TextMessage):
 
 
 class Notification(TextMessage):
-    def __init__(self, x=0, y=0, text="", image=None, color=(255, 255, 255)):
-        super().__init__(text=text, amount="", image=image, color=color, lifetime=90, speed=1)
+    def __init__(self, x=0, y=0, text="", image=None, color=(255, 255, 255), lifetime=400, speed=5):
+        super().__init__(text=text, amount="", image=image, color=color, lifetime=lifetime, speed=speed)
         self.world_x = x
         self.world_y = y
+        
+    def update(self):
+        self.y -= self.vertical_speed
+        self.lifetime -= 1
+        if self.lifetime < 255:
+            if (self.lifetime + (self.lifetime // 3)) <= self.max_lifetime:
+                self.alpha = max(0, int(((self.lifetime + (self.lifetime // 3)) / self.max_lifetime) * 255))
+            else:
+                self.alpha = max(0, int((self.lifetime / self.max_lifetime) * 255))
+        elif self.lifetime < 340:
+            self.vertical_speed = 0
+                
+            self.lifetime -= 1
+        return self.lifetime <= 0
 
 class FixedNotification:
     def __init__(self, text="", amount="", color=(255, 255, 255), image=None):
@@ -77,7 +91,7 @@ class FixedNotification:
 
         self.y = 0
 
-        self.font = pygame.font.Font(settings.PIXEL_FONT, 24)
+        self.font = pygame.font.Font(settings.MOON_FONT, 24)
     
     def show_text(self, surface, target_x, target_y, flip=None):
         # self.font.set_bold(True)
