@@ -1,6 +1,6 @@
 # inventory.py
 from src.settings import PIXEL_FONT, GLOBAL_NOTIFICATIONS
-from src.ui import notification
+from src.ui import notification, player_state
 import pygame
 
 
@@ -38,6 +38,7 @@ class Inventory:
             pygame.Rect(x, y + 110, 150, 50),
             pygame.Rect(x, y + 190, 150, 50),
             pygame.Rect(x, y + 270, 150, 50),
+            pygame.Rect(x, y + 350, 150, 50),
         ]
 
         
@@ -48,7 +49,7 @@ class Inventory:
             item_x = item.x + (self.count_x * (self.padding_x + item.rect.width))
             item_y = item.y + (self.count_y * (self.padding_y + item.rect.height))
             
-            self.screen.blit(item.image, (item_x, item_y))
+            self.screen.blit(item.image, (item_x + 5, item_y + 7))
             
             item.update_rect(item_x, item_y)
             
@@ -60,7 +61,7 @@ class Inventory:
             # pygame.draw.rect(self.screen, (255,255,255), (item_x, item_y, item.rect.width, item.rect.height), 2)
         self.count_x, self.count_y = 0, 0
         
-    def drop_down_list(self, event, hover_list):
+    def drop_down_list(self, event, hover_list, player_state_items):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3: # Right Click
             for item in self.items:
                 if item.rect.collidepoint(event.pos):
@@ -79,7 +80,7 @@ class Inventory:
                     actions = {
                         1: self.selected_item.use,
                         2: lambda: self.selected_item.use(self.selected_item.quantity),
-                        3: self.selected_item.fix_position,
+                        3: lambda: self.selected_item.add_in_bar(self.selected_item, player_state_items),
                         4: self.selected_item.drop
                     }
                     
@@ -217,8 +218,15 @@ class Item(pygame.sprite.Sprite):
         if self.quantity == 0:
             self.kill()
     
-    def fix_position(self):
-        pass
+    def add_in_bar(self, selected_item, items):
+        hotbar_order = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+        
+        if selected_item not in items.values():
+            for key in hotbar_order:
+                if not items[key]: 
+                    items[key] = selected_item 
+                    break 
+        
     
     def drop(self):
         self.kill()

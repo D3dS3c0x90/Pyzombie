@@ -10,6 +10,7 @@ import src.assets_manager as assets
 import src.systems.combat_helpers as combat
 import src.systems.collision_system as collisions
 import src.systems.spawn_system as spawn
+import src.core.just_one_time as jot
 from src.core.camera import Camera
 from src.entities.player import Player
 from src.entities.zombie import Zombie
@@ -23,15 +24,17 @@ import src.core.clock as clock_and_time
 from src.settings import (
     SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT,
     FPS, WHOLE_LIST, MUSIC_ENDED_EVENT, IS_INVENTORY_OPEN, BUILDINGS, IS_COLLISIONED, ITEMS, ACTION_LIST,
-    GLOBAL_NOTIFICATIONS, HEALTH_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, ITEMS_KEYS
+    GLOBAL_NOTIFICATIONS, HEALTH_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, CRAFTING_INVENTORY_OPEN, ITEMS_KEYS
     )
 
 def _init_items():
     global ITEMS, WHOLE_LIST
     ITEMS = {
         "Health" : {
-            "health_1":{"name" : "Small Health", "amount" : 10, "image" : assets.sprites["health_1"]},
-            "health_2":{"name" : "Normal Health", "amount" : 20, "image" : assets.sprites["health_2"]},
+            "bandeg_1":{"name" : "Small Health", "amount" : 10, "image" : assets.sprites["bandeg_1"]},
+            "bandeg_2":{"name" : "Normal Health", "amount" : 20, "image" : assets.sprites["bandeg_2"]},
+            "bandeg_3":{"name" : "Large Health", "amount" : 30, "image" : assets.sprites["bandeg_3"]},
+            "bandeg_4":{"name" : "XLarge Health", "amount" : 40, "image" : assets.sprites["bandeg_4"]},
             # {"name" : "health_3", "amount" : 35, "image" : sprites[""]},
             # {"name" : "health_4", "amount" : 50, "image" : sprites[""]},
             # {"name" : "health_5", "amount" : 80, "image" : sprites[""]},
@@ -46,7 +49,10 @@ def _init_items():
         #     {"name" : "food_3", "amount" : 35, "image" : sprites[""]},
         # ], 
         "Ammo" : {
-            "rifle_ammo_1":{"name" : "5.56x45mm", "amount" : 10, "image" : assets.sprites["ammo"]},
+            "7_62_ammo_1":{"name" : "Small 7.62", "amount" : 10, "image" : assets.sprites["7_62_ammo_1"]},
+            "7_62_ammo_2":{"name" : "Normal 7.62", "amount" : 20, "image" : assets.sprites["7_62_ammo_2"]},
+            "7_62_ammo_3":{"name" : "Large 7.62", "amount" : 35, "image" : assets.sprites["7_62_ammo_3"]},
+            "7_62_ammo_4":{"name" : "XLarge 7.62", "amount" : 50, "image" : assets.sprites["7_62_ammo_4"]},
             # {"name" : "5.56×45mm", "amount" : 20, "image" : sprites[""]},
             # {"name" : "5.56×45mm", "amount" : 35, "image" : sprites[""]},
             
@@ -104,6 +110,7 @@ class GameEngine:
         self.inventory_ammo_group = pygame.sprite.Group()
         self.inventory_health_group = pygame.sprite.Group()
         self.inventory_gear_group = pygame.sprite.Group()
+        self.inventory_crafting_group = pygame.sprite.Group()
 
         self.minimap = minimap_module.Minimap()
         self.safezone = SafeZone(
@@ -157,6 +164,12 @@ class GameEngine:
                         assets.sprites["inventory"]["Gear"].get_width(), assets.sprites["inventory"]["Gear"].get_height(), 
                         assets.sprites["inventory"]["Gear"], self.screen, []
                         ),
+            "Crafting" : inventory.Inventory(
+                        self.inventory_start_x,
+                        self.inventory_start_y,
+                        assets.sprites["inventory"]["Crafting"].get_width(), assets.sprites["inventory"]["Crafting"].get_height(), 
+                        assets.sprites["inventory"]["Crafting"], self.screen, []
+                        ),
         }
         
         self.player_info = player_state_module.PlayerState(
@@ -188,11 +201,19 @@ class GameEngine:
         pygame.mixer.music.play(loops=0)
         
     def _reset_inventory_taps(self):
-        global HEALTH_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, GEAR_INVENTORY_OPEN
+        global HEALTH_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, CRAFTING_INVENTORY_OPEN, IS_INVENTORY_OPEN
+        IS_INVENTORY_OPEN = False
+        self.player_info.selected_char = None
         
-        HEALTH_INVENTORY_OPEN = True
+        HEALTH_INVENTORY_OPEN = False
         AMMO_INVENTORY_OPEN = False
         GEAR_INVENTORY_OPEN = False
+        CRAFTING_INVENTORY_OPEN = False
+        
+        self.inventory["Health"].active_list = False
+        self.inventory["Ammo"].active_list = False
+        self.inventory["Gear"].active_list = False
+        self.inventory["Crafting"].active_list = False
         
     def _inventory_preparing(self, inventory_items_group, category):
         self.inventory[category].items = inventory_items_group
@@ -237,19 +258,93 @@ class GameEngine:
                 y_value += component.image.get_height()
         
     def init_items(self):
-        health = ITEMS["Health"]["health_1"]
-        health_item = inventory.Item(self.item_start_x, self.item_start_y, health, "Health", self.player, self.inventory_health_group, self.inventory_group)
-        health_item.inc(3)
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Health"]["bandeg_1"], 
+            "Health", 
+            self.player, 
+            self.inventory_health_group, 
+            self.inventory_group,
+            amount=5)
         
-        ammo = ITEMS["Ammo"]["rifle_ammo_1"]
-        ammo_item = inventory.Item(self.item_start_x, self.item_start_y, ammo, "Ammo", self.player, self.inventory_ammo_group, self.inventory_group)
-        ammo_item.inc(8)
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Health"]["bandeg_2"], 
+            "Health", 
+            self.player, 
+            self.inventory_health_group, 
+            self.inventory_group,
+            amount=3)
+        
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Health"]["bandeg_3"], 
+            "Health", 
+            self.player, 
+            self.inventory_health_group, 
+            self.inventory_group,
+            amount=2)
+        
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Health"]["bandeg_4"], 
+            "Health", 
+            self.player, 
+            self.inventory_health_group, 
+            self.inventory_group,
+            amount=1)
+        
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Ammo"]["7_62_ammo_1"], 
+            "Ammo", 
+            self.player, 
+            self.inventory_ammo_group, 
+            self.inventory_group,
+            amount=5)
+        
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Ammo"]["7_62_ammo_2"], 
+            "Ammo", 
+            self.player, 
+            self.inventory_ammo_group, 
+            self.inventory_group,
+            amount=3)
+        
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Ammo"]["7_62_ammo_3"], 
+            "Ammo", 
+            self.player, 
+            self.inventory_ammo_group, 
+            self.inventory_group,
+            amount=2)
+        
+        jot.add_item_to_inventory(
+            self.item_start_x, 
+            self.item_start_y, 
+            ITEMS["Ammo"]["7_62_ammo_4"], 
+            "Ammo", 
+            self.player, 
+            self.inventory_ammo_group, 
+            self.inventory_group,
+            amount=1)
+
         
         # =================================================================
         # 🔥 PRESERVED ORIGINAL BUG AREA (As requested for manual debugging)
         # =================================================================
         for index, item in enumerate(self.inventory_group):
-            self.player_info.add_item(str(index + 2), item)
+            if index <= 5:
+                self.player_info.add_item(str(index + 2), item)
         
     def _active_inventory(self):
         if HEALTH_INVENTORY_OPEN:
@@ -258,22 +353,32 @@ class GameEngine:
             return self.inventory["Ammo"]
         if GEAR_INVENTORY_OPEN:
             return self.inventory["Gear"]
+        if CRAFTING_INVENTORY_OPEN:
+            return self.inventory["Crafting"]
         return None
     
     def _set_active_tab(self, category):
-        global HEALTH_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, AMMO_INVENTORY_OPEN
+        global HEALTH_INVENTORY_OPEN, GEAR_INVENTORY_OPEN, AMMO_INVENTORY_OPEN, CRAFTING_INVENTORY_OPEN
         if category == "Health":
             HEALTH_INVENTORY_OPEN = True
             AMMO_INVENTORY_OPEN = False
             GEAR_INVENTORY_OPEN = False
+            CRAFTING_INVENTORY_OPEN = False
         elif category == "Ammo":
             HEALTH_INVENTORY_OPEN = False
             AMMO_INVENTORY_OPEN = True
             GEAR_INVENTORY_OPEN = False
+            CRAFTING_INVENTORY_OPEN = False
         elif category == "Gear":
             HEALTH_INVENTORY_OPEN = False
             AMMO_INVENTORY_OPEN = False
             GEAR_INVENTORY_OPEN = True
+            CRAFTING_INVENTORY_OPEN = False
+        elif category == "Crafting":
+            HEALTH_INVENTORY_OPEN = False
+            AMMO_INVENTORY_OPEN = False
+            GEAR_INVENTORY_OPEN = False
+            CRAFTING_INVENTORY_OPEN = True
         
     def run(self):
         while self.running:
@@ -320,6 +425,7 @@ class GameEngine:
                     for key in num_list:
                         ITEMS_KEYS[key] = False
                     ITEMS_KEYS[str(key_name)] = True
+                    self.selected_char = str(key_name)
                     
                     if event.type == pygame.KEYUP:
                         self.player_info.key_release = True
@@ -337,13 +443,20 @@ class GameEngine:
                 elif IS_INVENTORY_OPEN:
                     for i, tap_rect in enumerate(self.inventory["Health"].taps):
                         if tap_rect.collidepoint(event.pos):
-                            self._set_active_tab(["Health", "Ammo", "Gear"][i])
+                            self._set_active_tab(["Health", "Ammo", "Gear", "Crafting"][i])
+                        
+                    for key, rect in self.player_info.collisions.items():
+                        if rect.collidepoint(event.pos):
+                            for k in num_list:
+                                ITEMS_KEYS[k] = False
+                            ITEMS_KEYS[str(key)] = True
+                            self.selected_char = str(key)
                             
                     self.player_info.drag_item(event.pos)
 
             # 5. Process Active Inventory Context Dropdowns
             if active_inv:
-                active_inv.drop_down_list(event, self.hovered_counter)
+                active_inv.drop_down_list(event, self.hovered_counter, self.player_info.items)
                                 
             # 6. Dispatch General Player Collision Event Detection
             self.player_info.collision_event_detection(event, IS_INVENTORY_OPEN)
@@ -375,7 +488,7 @@ class GameEngine:
     # 🔄 UPDATE
     # ==========================================================
     def update_game_states(self):
-        global IS_INVENTORY_OPEN, IS_COLLISIONED
+        global IS_INVENTORY_OPEN, IS_COLLISIONED, HEALTH_INVENTORY_OPEN
         keys = pygame.key.get_pressed()
         mouse = pygame.mouse.get_pressed()
         self.mx, self.my = pygame.mouse.get_pos()
@@ -384,22 +497,16 @@ class GameEngine:
             if keys[pygame.K_e]:
                 if IS_INVENTORY_OPEN:
                     if keys[pygame.K_ESCAPE] or keys[pygame.K_e]:
-                        IS_INVENTORY_OPEN = False
-                        self.inventory["Health"].active_list = False
-                        self.inventory["Ammo"].active_list = False
-                        self.inventory["Gear"].active_list = False
                         self._reset_inventory_taps()
+                        HEALTH_INVENTORY_OPEN = True
                         self.hovered_counter = [None for _ in ACTION_LIST]
                 elif not IS_INVENTORY_OPEN and True not in IS_COLLISIONED:
                     IS_INVENTORY_OPEN = True
                 if True not in IS_COLLISIONED:
                     self.inventory_timer.pressed = True
         if keys[pygame.K_ESCAPE] and IS_INVENTORY_OPEN:
-            IS_INVENTORY_OPEN = False
-            self.inventory["Health"].active_list = False
-            self.inventory["Ammo"].active_list = False
-            self.inventory["Gear"].active_list = False
             self._reset_inventory_taps()
+            HEALTH_INVENTORY_OPEN = True
         self.inventory_timer.delay()
 
         self.player.move(keys, trees=self.trees_group, base=self.safezone)
@@ -532,6 +639,7 @@ class GameEngine:
     # 🖼️ RENDER
     # ==========================================================
     def render_draw_calls(self):
+        global HEALTH_INVENTORY_OPEN
         # self.screen.fill(ZOMBIED)
         cam_x, cam_y = self.camera.x, self.camera.y
         
@@ -627,16 +735,21 @@ class GameEngine:
         #     draw_y = dealer_rect.y - cam_y
 
         #     pygame.draw.rect(self.screen, (255, 0, 0), (draw_x, draw_y, dealer_rect.width, dealer_rect.height), 2)
+        
         if IS_INVENTORY_OPEN:
-            if HEALTH_INVENTORY_OPEN:
-                the_uni_inventory = self.inventory["Health"]
-                self._inventory_preparing(self.inventory_health_group, "Health")
-            elif AMMO_INVENTORY_OPEN:
+            if AMMO_INVENTORY_OPEN:
                 the_uni_inventory = self.inventory["Ammo"]
                 self._inventory_preparing(self.inventory_ammo_group, "Ammo")
             elif GEAR_INVENTORY_OPEN:
                 the_uni_inventory = self.inventory["Gear"]
                 self._inventory_preparing(self.inventory_gear_group, "Gear")
+            elif CRAFTING_INVENTORY_OPEN:
+                the_uni_inventory = self.inventory["Crafting"]
+                self._inventory_preparing(self.inventory_crafting_group, "Crafting")
+            else:
+                HEALTH_INVENTORY_OPEN = True
+                the_uni_inventory = self.inventory["Health"]
+                self._inventory_preparing(self.inventory_health_group, "Health")
             # for tap in the_uni_inventory.taps:
             #     pygame.draw.rect(self.screen, "#FF0000", (tap.x, tap.y, tap.width, tap.height), 2)
                 
@@ -646,6 +759,8 @@ class GameEngine:
                 elif AMMO_INVENTORY_OPEN:
                     notify.draw(self.screen, the_uni_inventory.list_x + 130, the_uni_inventory.list_y + 10)
                 elif GEAR_INVENTORY_OPEN:
+                    notify.draw(self.screen, the_uni_inventory.list_x + 130, the_uni_inventory.list_y + 10)
+                elif CRAFTING_INVENTORY_OPEN:
                     notify.draw(self.screen, the_uni_inventory.list_x + 130, the_uni_inventory.list_y + 10)
                 if notify.update():
                     GLOBAL_NOTIFICATIONS.remove(notify)

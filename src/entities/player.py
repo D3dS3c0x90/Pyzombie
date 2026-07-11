@@ -21,12 +21,12 @@ class Player(Entity):
         self.speed = 5
 
         self.weapon_type = "Rifle"
-        self.ammo_type = "5.56×45mm"
+        self.ammo_type = "7.62×45mm"
         self.weapon_ammo_count = 20
         self.ammo_stack = 20
         self.ammo_count = 20
 
-        self.coins = 13465
+        self.coins = 1500
 
         self.step_counter = 0
         self.step_timer = 20

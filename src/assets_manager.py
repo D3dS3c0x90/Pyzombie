@@ -139,7 +139,7 @@ def load_scenery_assets():
     all_list_components = get_path_files("assets/inventory/list")
     for component in all_list_components:
         
-        part_name = str(component).split("/")[-1].split(".")[0]
+        part_name = component.stem
         image = image_load(component)
         sprites[part_name] = image 
         WHOLE_LIST.append(image)
@@ -148,7 +148,7 @@ def load_scenery_assets():
     ACTION_LIST.append(None)
     for component in all_list_actions:
         
-        part_name = str(component).split("/")[-1].split(".")[0]
+        part_name = component.stem
         image = image_load(component)
         sprites[part_name] = image 
         ACTION_LIST.append(image)
@@ -180,6 +180,12 @@ def load_misc_assets():
         pygame.transform.scale(blood_png.subsurface((col * 64, 0, 64, 64)), (32, 32)).copy()
         for col in range(14)
     ]
+    
+def load_item_assets():
+    item_assets = get_path_files("assets/items")
+    for item in item_assets:
+        key = item.stem
+        sprites[key] = pygame.transform.scale(image_load(item), (64, 64))
 
 
 def _load_sound_folder(path, volume=None):
@@ -193,10 +199,10 @@ def _load_sound_folder(path, volume=None):
 
 
 def load_audio_assets():
-    sounds["no_ammo"] = [pygame.mixer.Sound("assets/sounds/no_ammo/no_ammo.ogg")]
-    sounds["ammo"] = [pygame.mixer.Sound("assets/sounds/weapon/collect.ogg")]
+    sounds["no_ammo"] = [pygame.mixer.Sound(Path("assets/sounds/no_ammo/no_ammo.ogg"))]
+    sounds["ammo"] = [pygame.mixer.Sound(Path("assets/sounds/weapon/collect.ogg"))]
 
-    health_sound = pygame.mixer.Sound("assets/sounds/bags/health.ogg")
+    health_sound = pygame.mixer.Sound(Path("assets/sounds/bags/health.ogg"))
     health_sound.set_volume(0.3)
     sounds["health"] = [health_sound]
 
@@ -221,3 +227,4 @@ def load_all_assets():
     load_misc_assets()
     load_audio_assets()
     load_chars_assets()
+    load_item_assets()

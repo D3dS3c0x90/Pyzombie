@@ -69,19 +69,27 @@ class PlayerState:
                         self.last_dragged_item_key = key
                         break
         else:
+            dropped_in_slot = False
+            
             for key, rect in self.collisions.items():
                 if rect.collidepoint(mouse_pos):
-                    for item_key, _ in self.items.items():
-                        if item_key == key:
-                            self.items[item_key] = self.dragged_item["item"]
-                            self.items[self.last_dragged_item_key] = None
-                            self.last_dragged_item_key = None
-                            # self.items[item_key] = self.dragged_item["char"]
-                            break
-                    self.dragged_item["char"] = None
-                    self.dragged_item["item"] = None
-                    self.hotbar_item_pressed = False
-                    break
+                    dropped_in_slot = True 
+                    if key == self.last_dragged_item_key:
+                        break
+                    
+                    else:
+                        target_slot_item = self.items[key]
+                        self.items[key] = self.dragged_item["item"]
+                        self.items[self.last_dragged_item_key] = target_slot_item
+                        break
+            
+            if not dropped_in_slot and self.last_dragged_item_key is not None:
+                self.items[self.last_dragged_item_key] = None 
+                         
+            self.last_dragged_item_key = None
+            self.dragged_item["char"] = None
+            self.dragged_item["item"] = None
+            self.hotbar_item_pressed = False
                          
     def collision_event_detection(self, event, is_inventory_open):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -152,7 +160,7 @@ class PlayerState:
             self.draw_selected_item(self.selected_char)
         
         for key, value in self.items.items():
-            if value:
+             if value:
                 if value.quantity > 0:
                     image = value.image
                     image = pygame.transform.scale(image, (self.collisions[key].width - 5, self.collisions[key].height - 5))
@@ -162,7 +170,9 @@ class PlayerState:
                     self.screen.blit(item_font.render(str(value.quantity), False, "#ffffff"), (self.collisions[key].x, self.collisions[key].y))
                 else:
                     value.kill()
-                    self.selected_char = None
+                    self.items[key] = False
+                    if self.selected_char:
+                        self.selected_char = None
         
         # for _, value in self.collisions.items():
         #     pygame.draw.rect(self.screen, (255, 0, 0), value, 1)
